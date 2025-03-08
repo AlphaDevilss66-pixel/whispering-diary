@@ -1,132 +1,131 @@
 
-import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, BookOpen, User } from "lucide-react";
+import AuthModal from "@/components/auth/AuthModal";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Book, LogOut, Settings, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
 
 const NavBar = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const location = useLocation();
-  
-  // Add scroll effect
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-  
-  // Close menu when route changes
-  useEffect(() => {
-    setIsMenuOpen(false);
-  }, [location.pathname]);
-  
-  // Nav items
-  const navItems = [
-    { name: "Home", path: "/" },
-    { name: "Explore", path: "/explore" },
-    { name: "Dashboard", path: "/dashboard" },
-    { name: "Profile", path: "/profile" },
-  ];
-  
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authTab, setAuthTab] = useState<"login" | "register">("login");
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { profile } = useProfile();
+
+  const openAuthModal = (tab: "login" | "register") => {
+    setAuthTab(tab);
+    setShowAuthModal(true);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
+  const getInitials = () => {
+    if (profile?.full_name) {
+      return profile.full_name
+        .split(" ")
+        .map(n => n[0])
+        .join("")
+        .toUpperCase();
+    } else if (profile?.username) {
+      return profile.username.substring(0, 2).toUpperCase();
+    }
+    return "U";
+  };
+
   return (
-    <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${isScrolled ? "bg-white/90 backdrop-blur-md shadow-sm" : "bg-transparent"}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link 
-            to="/" 
-            className="flex items-center space-x-2 focus-ring rounded-md"
-          >
-            <BookOpen className="h-6 w-6 text-primary" />
-            <span className="font-serif text-xl font-medium tracking-tight">Whispering Diary</span>
+    <header className="fixed w-full top-0 z-40 bg-white/80 backdrop-blur-md border-b">
+      <div className="page-container flex items-center justify-between h-16">
+        <Link to="/" className="flex items-center gap-2">
+          <span className="font-serif text-xl font-medium text-primary">Whispers</span>
+        </Link>
+
+        <nav className="hidden md:flex items-center gap-6">
+          <Link to="/" className="text-gray-600 hover:text-primary transition-colors">
+            Home
           </Link>
-          
-          {/* Desktop navigation */}
-          <nav className="hidden md:flex space-x-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.path}
-                className={`text-sm font-medium transition-colors hover:text-primary focus-ring rounded-md ${
-                  location.pathname === item.path 
-                    ? "text-primary"
-                    : "text-foreground/80"
-                }`}
-              >
-                {item.name}
+          {user && (
+            <>
+              <Link to="/dashboard" className="text-gray-600 hover:text-primary transition-colors">
+                My Diary
               </Link>
-            ))}
-          </nav>
-          
-          {/* Auth buttons - Desktop */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              asChild
-            >
-              <Link to="/login">Sign In</Link>
-            </Button>
-            <Button 
-              size="sm" 
-              className="bg-primary hover:bg-primary/90 text-white transition-all"
-              asChild
-            >
-              <Link to="/register">Sign Up</Link>
-            </Button>
-          </div>
-          
-          {/* Mobile menu button */}
-          <div className="flex md:hidden">
-            <Button
-              variant="ghost" 
-              size="icon"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              aria-label="Toggle menu"
-              className="rounded-full focus-ring"
-            >
-              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-          </div>
+              <Link to="/explore" className="text-gray-600 hover:text-primary transition-colors">
+                Explore
+              </Link>
+            </>
+          )}
+          <Link to="#" className="text-gray-600 hover:text-primary transition-colors">
+            About
+          </Link>
+        </nav>
+
+        <div className="flex items-center gap-4">
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="rounded-full h-10 w-10 p-0 overflow-hidden">
+                  <Avatar>
+                    <AvatarImage src={profile?.avatar_url || ""} />
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {getInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate("/profile")}>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                  <Book className="mr-2 h-4 w-4" />
+                  <span>My Diary</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sign out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Button 
+                variant="ghost"
+                onClick={() => openAuthModal("login")}
+                className="hidden sm:flex"
+              >
+                Sign In
+              </Button>
+              <Button onClick={() => openAuthModal("register")}>
+                Get Started
+              </Button>
+            </>
+          )}
         </div>
       </div>
-      
-      {/* Mobile navigation */}
-      {isMenuOpen && (
-        <div className="md:hidden bg-white/95 backdrop-blur-md animate-fade-in">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.path}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                  location.pathname === item.path
-                    ? "text-primary bg-primary/10"
-                    : "text-foreground hover:bg-gray-50"
-                }`}
-              >
-                {item.name}
-              </Link>
-            ))}
-            <div className="flex flex-col space-y-2 pt-2 border-t border-gray-200 mt-2">
-              <Button 
-                variant="ghost" 
-                className="justify-start" 
-                asChild
-              >
-                <Link to="/login">Sign In</Link>
-              </Button>
-              <Button asChild>
-                <Link to="/register">Sign Up</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+
+      <AuthModal 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        defaultTab={authTab}
+      />
     </header>
   );
 };

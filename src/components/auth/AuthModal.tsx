@@ -5,7 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { EyeOff, Eye, Lock, Mail, User } from "lucide-react";
+import { EyeOff, Eye, Lock, Mail, User, AlertCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -16,6 +18,8 @@ interface AuthModalProps {
 const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) => {
   const [activeTab, setActiveTab] = useState<"login" | "register">(defaultTab);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn, signUp } = useAuth();
 
   const [loginData, setLoginData] = useState({
     email: "",
@@ -28,16 +32,57 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
     password: "",
   });
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const [formErrors, setFormErrors] = useState<{
+    login?: string;
+    register?: string;
+  }>({});
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Login form submission logic goes here
-    console.log("Login data:", loginData);
+    setIsLoading(true);
+    setFormErrors({});
+
+    try {
+      const { error } = await signIn(loginData.email, loginData.password);
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Logged in successfully");
+      onClose();
+    } catch (error: any) {
+      console.error("Login error:", error);
+      setFormErrors({ login: error.message || "Failed to login" });
+      toast.error("Login failed");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Register form submission logic goes here
-    console.log("Register data:", registerData);
+    setIsLoading(true);
+    setFormErrors({});
+
+    try {
+      const { error } = await signUp(registerData.email, registerData.password, {
+        name: registerData.name,
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Account created successfully! Please check your email to confirm your registration.");
+      onClose();
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      setFormErrors({ register: error.message || "Failed to create account" });
+      toast.error("Registration failed");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,6 +124,13 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
 
           <TabsContent value="login" className="mt-6">
             <form onSubmit={handleLoginSubmit} className="space-y-4">
+              {formErrors.login && (
+                <div className="bg-destructive/10 p-3 rounded-md flex items-start gap-2">
+                  <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                  <p className="text-sm text-destructive">{formErrors.login}</p>
+                </div>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="login-email">Email</Label>
                 <div className="relative">
@@ -92,6 +144,7 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
                     onChange={handleLoginChange}
                     className="pl-10"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -109,6 +162,7 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
                     onChange={handleLoginChange}
                     className="pl-10 pr-10"
                     required
+                    disabled={isLoading}
                   />
                   <Button
                     type="button"
@@ -116,6 +170,7 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
                     size="icon"
                     className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
                     onClick={toggleShowPassword}
+                    disabled={isLoading}
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4 text-gray-400" />
@@ -131,19 +186,27 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
                   type="button"
                   variant="link"
                   className="text-sm text-gray-500 hover:text-primary p-0 h-auto"
+                  disabled={isLoading}
                 >
                   Forgot password?
                 </Button>
               </div>
 
-              <Button type="submit" className="w-full">
-                Sign In
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Signing In..." : "Sign In"}
               </Button>
             </form>
           </TabsContent>
 
           <TabsContent value="register" className="mt-6">
             <form onSubmit={handleRegisterSubmit} className="space-y-4">
+              {formErrors.register && (
+                <div className="bg-destructive/10 p-3 rounded-md flex items-start gap-2">
+                  <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                  <p className="text-sm text-destructive">{formErrors.register}</p>
+                </div>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="register-name">Full Name</Label>
                 <div className="relative">
@@ -157,6 +220,7 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
                     onChange={handleRegisterChange}
                     className="pl-10"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -174,6 +238,7 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
                     onChange={handleRegisterChange}
                     className="pl-10"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -191,6 +256,8 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
                     onChange={handleRegisterChange}
                     className="pl-10 pr-10"
                     required
+                    disabled={isLoading}
+                    minLength={6}
                   />
                   <Button
                     type="button"
@@ -198,6 +265,7 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
                     size="icon"
                     className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
                     onClick={toggleShowPassword}
+                    disabled={isLoading}
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4 text-gray-400" />
@@ -208,8 +276,8 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
                 </div>
               </div>
 
-              <Button type="submit" className="w-full">
-                Create Account
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
           </TabsContent>
