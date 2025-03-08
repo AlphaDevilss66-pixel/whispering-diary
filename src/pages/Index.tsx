@@ -40,22 +40,23 @@ const Index = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#F9FAFB]">
       <NavBar />
       
       {/* Hero Section */}
-      <section className="pt-32 pb-16">
+      <section className="pt-32 pb-16 bg-gradient-to-b from-white to-[#F9FAFB]">
         <div className="page-container">
           <div className="max-w-3xl mx-auto text-center animate-fade-in">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-semibold leading-tight text-balance mb-6">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-medium leading-tight mb-6">
               Share Your Story, <br />
-              <span className="text-primary">Keep Your Privacy</span>
+              <span className="text-gradient">Keep Your Privacy</span>
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
               A safe space to express yourself freely. Write private diary entries, share anonymously, and connect with others on similar journeys.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <CustomButton 
+                variant="ios" 
                 size="lg" 
                 onClick={() => openAuthModal("register")}
                 className="w-full sm:w-auto"
@@ -67,6 +68,7 @@ const Index = () => {
                 size="lg"
                 onClick={() => openAuthModal("login")}
                 className="w-full sm:w-auto"
+                isIOS={true}
               >
                 Sign In
               </CustomButton>
@@ -76,7 +78,7 @@ const Index = () => {
           <div className="mt-16 flex justify-center">
             <Link 
               to="#features" 
-              className="flex flex-col items-center text-gray-500 hover:text-primary transition-colors"
+              className="flex flex-col items-center text-gray-500 hover:text-ios-blue transition-colors"
             >
               <span className="text-sm mb-2">Learn More</span>
               <ChevronDown className="h-5 w-5 animate-pulse-subtle" />
@@ -86,10 +88,10 @@ const Index = () => {
       </section>
       
       {/* Features Section */}
-      <section id="features" className="py-20 bg-gray-50">
+      <section id="features" className="py-20">
         <div className="page-container">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-serif font-semibold mb-4">
+            <h2 className="text-3xl font-medium mb-4">
               Your Thoughts, Your Way
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
@@ -97,36 +99,36 @@ const Index = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
-                icon: <BookOpen className="h-8 w-8 text-primary" />,
+                icon: <BookOpen className="h-8 w-8 text-ios-blue" />,
                 title: "Private Journaling",
                 description: "Keep your personal thoughts secure and private, accessible only to you."
               },
               {
-                icon: <Shield className="h-8 w-8 text-primary" />,
+                icon: <Shield className="h-8 w-8 text-ios-green" />,
                 title: "Anonymous Sharing",
                 description: "Share your experiences anonymously when you want to connect without revealing your identity."
               },
               {
-                icon: <Users className="h-8 w-8 text-primary" />,
+                icon: <Users className="h-8 w-8 text-ios-purple" />,
                 title: "Community Connection",
                 description: "Find others with similar experiences and build meaningful connections."
               },
               {
-                icon: <Key className="h-8 w-8 text-primary" />,
+                icon: <Key className="h-8 w-8 text-ios-orange" />,
                 title: "Encrypted Security",
                 description: "Your data is encrypted and secure, giving you peace of mind."
               }
             ].map((feature, index) => (
               <div
                 key={feature.title}
-                className={`animate-on-scroll glass-card p-8 transform transition-all duration-500 ${
+                className={`animate-on-scroll ios-card p-8 transform transition-all duration-500 ${
                   isVisible[index] ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
                 }`}
               >
-                <div className="bg-primary/10 rounded-full p-3 inline-block mb-4">
+                <div className="rounded-2xl p-3 inline-block mb-4 bg-[#F5F7FA]">
                   {feature.icon}
                 </div>
                 <h3 className="text-xl font-medium mb-3">{feature.title}</h3>
@@ -138,16 +140,17 @@ const Index = () => {
       </section>
       
       {/* CTA Section */}
-      <section className="py-24 bg-primary/5">
+      <section className="py-24 bg-gradient-to-b from-[#F9FAFB] to-white">
         <div className="page-container">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl font-serif font-semibold mb-4">
+          <div className="max-w-3xl mx-auto text-center ios-card py-16 px-8">
+            <h2 className="text-3xl font-medium mb-4">
               Ready to Start Your Journey?
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto mb-8">
               Join thousands of others who have found clarity, connection, and comfort through writing.
             </p>
             <CustomButton 
+              variant="ios"
               size="lg" 
               onClick={() => openAuthModal("register")}
             >

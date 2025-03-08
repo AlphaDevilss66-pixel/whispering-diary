@@ -20,8 +20,9 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				sans: ['Inter', 'SF Pro Display', 'system-ui', 'sans-serif'],
+				sans: ['SF Pro Display', 'Inter', 'system-ui', 'sans-serif'],
 				serif: ['Playfair Display', 'Georgia', 'serif'],
+				mono: ['SF Mono', 'monospace'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -57,21 +58,34 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
+				ios: {
+					'blue': '#007AFF',
+					'green': '#34C759',
+					'indigo': '#5856D6',
+					'orange': '#FF9500',
+					'pink': '#FF2D55',
+					'purple': '#AF52DE',
+					'red': '#FF3B30',
+					'teal': '#5AC8FA',
+					'yellow': '#FFCC00',
+					'gray': {
+						'1': '#8E8E93',
+						'2': '#AEAEB2',
+						'3': '#C7C7CC',
+						'4': '#D1D1D6',
+						'5': '#E5E5EA',
+						'6': '#F2F2F7',
+					}
 				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			boxShadow: {
+				'ios': '0 2px 10px rgba(0, 0, 0, 0.05)',
+				'ios-lg': '0 10px 25px -5px rgba(0, 0, 0, 0.05)',
 			},
 			keyframes: {
 				'accordion-down': {
