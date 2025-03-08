@@ -49,12 +49,12 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
         throw error;
       }
       
-      toast.success("Logged in successfully");
+      toast.success("Accesso effettuato con successo");
       onClose();
     } catch (error: any) {
       console.error("Login error:", error);
-      setFormErrors({ login: error.message || "Failed to login" });
-      toast.error("Login failed");
+      setFormErrors({ login: error.message || "Accesso fallito" });
+      toast.error("Accesso fallito");
     } finally {
       setIsLoading(false);
     }
@@ -74,12 +74,12 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
         throw error;
       }
       
-      toast.success("Account created successfully! Please check your email to confirm your registration.");
+      toast.success("Account creato con successo!");
       onClose();
     } catch (error: any) {
       console.error("Registration error:", error);
-      setFormErrors({ register: error.message || "Failed to create account" });
-      toast.error("Registration failed");
+      setFormErrors({ register: error.message || "Impossibile creare l'account" });
+      toast.error("Registrazione fallita");
     } finally {
       setIsLoading(false);
     }
@@ -108,7 +108,7 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
       <DialogContent className="sm:max-w-md" onPointerDownOutside={onClose}>
         <DialogHeader>
           <DialogTitle className="text-center font-serif text-xl">
-            {activeTab === "login" ? "Welcome Back" : "Create an Account"}
+            {activeTab === "login" ? "Bentornato" : "Crea un Account"}
           </DialogTitle>
         </DialogHeader>
 
@@ -118,8 +118,8 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
           className="w-full"
         >
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Sign In</TabsTrigger>
-            <TabsTrigger value="register">Sign Up</TabsTrigger>
+            <TabsTrigger value="login">Accedi</TabsTrigger>
+            <TabsTrigger value="register">Registrati</TabsTrigger>
           </TabsList>
 
           <TabsContent value="login" className="mt-6">
@@ -139,7 +139,7 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
                     id="login-email"
                     name="email"
                     type="email"
-                    placeholder="your.email@example.com"
+                    placeholder="la.tua.email@esempio.com"
                     value={loginData.email}
                     onChange={handleLoginChange}
                     className="pl-10"
@@ -188,12 +188,12 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
                   className="text-sm text-gray-500 hover:text-primary p-0 h-auto"
                   disabled={isLoading}
                 >
-                  Forgot password?
+                  Password dimenticata?
                 </Button>
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing In..." : "Sign In"}
+                {isLoading ? "Accesso in corso..." : "Accedi"}
               </Button>
             </form>
           </TabsContent>
@@ -208,14 +208,14 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
               )}
               
               <div className="space-y-2">
-                <Label htmlFor="register-name">Full Name</Label>
+                <Label htmlFor="register-name">Nome Completo</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     id="register-name"
                     name="name"
                     type="text"
-                    placeholder="John Doe"
+                    placeholder="Mario Rossi"
                     value={registerData.name}
                     onChange={handleRegisterChange}
                     className="pl-10"
@@ -233,7 +233,7 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
                     id="register-email"
                     name="email"
                     type="email"
-                    placeholder="your.email@example.com"
+                    placeholder="la.tua.email@esempio.com"
                     value={registerData.email}
                     onChange={handleRegisterChange}
                     className="pl-10"
@@ -277,18 +277,18 @@ const AuthModal = ({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) =>
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating Account..." : "Create Account"}
+                {isLoading ? "Creazione account..." : "Crea Account"}
               </Button>
             </form>
           </TabsContent>
         </Tabs>
 
         <div className="mt-4 text-center text-sm text-gray-500">
-          By continuing, you agree to our{" "}
+          Continuando, accetti i nostri{" "}
           <a href="#" className="text-primary hover:underline">
-            Terms of Service
+            Termini di Servizio
           </a>{" "}
-          and{" "}
+          e la nostra{" "}
           <a href="#" className="text-primary hover:underline">
             Privacy Policy
           </a>

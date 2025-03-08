@@ -52,13 +52,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, metadata?: { name?: string }) => {
-    return supabase.auth.signUp({
+    // Sign up without email verification
+    const result = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: metadata,
+        emailRedirectTo: window.location.origin,
       },
     });
+    
+    // Auto-sign in the user after signup
+    if (result.data.user && !result.error) {
+      await signIn(email, password);
+    }
+    
+    return result;
   };
 
   const signOut = async () => {
