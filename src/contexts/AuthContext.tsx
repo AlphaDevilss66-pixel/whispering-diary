@@ -7,14 +7,16 @@ type AuthContextType = {
   session: Session | null;
   user: User | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<{
+  signInWithPhone: (phone: string) => Promise<{
     error: Error | null;
-    data: { user: User | null; session: Session | null } | null;
+    data: any;
   }>;
-  signUp: (email: string, password: string, metadata?: { name?: string }) => Promise<{
+  verifyOTP: (phone: string, token: string) => Promise<{
     error: Error | null;
-    data: { user: User | null; session: Session | null } | null;
+    data: any;
   }>;
+  signInWithGoogle: () => Promise<void>;
+  signInWithMicrosoft: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -47,27 +49,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    return supabase.auth.signInWithPassword({ email, password });
+  const signInWithPhone = async (phone: string) => {
+    return supabase.auth.signInWithOtp({
+      phone
+    });
   };
 
-  const signUp = async (email: string, password: string, metadata?: { name?: string }) => {
-    // Sign up without email verification
-    const result = await supabase.auth.signUp({
-      email,
-      password,
+  const verifyOTP = async (phone: string, token: string) => {
+    return supabase.auth.verifyOtp({
+      phone,
+      token,
+      type: 'sms'
+    });
+  };
+
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
       options: {
-        data: metadata,
-        emailRedirectTo: window.location.origin,
-      },
+        redirectTo: window.location.origin
+      }
     });
     
-    // Auto-sign in the user after signup
-    if (result.data.user && !result.error) {
-      await signIn(email, password);
+    if (error) {
+      console.error("Google sign-in error:", error);
+      throw error;
     }
+  };
+
+  const signInWithMicrosoft = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'azure',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
     
-    return result;
+    if (error) {
+      console.error("Microsoft sign-in error:", error);
+      throw error;
+    }
   };
 
   const signOut = async () => {
@@ -78,8 +99,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session,
     user,
     isLoading,
-    signIn,
-    signUp,
+    signInWithPhone,
+    verifyOTP,
+    signInWithGoogle,
+    signInWithMicrosoft,
     signOut,
   };
 
