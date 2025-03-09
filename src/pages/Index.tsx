@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
@@ -7,12 +7,32 @@ import CustomButton from "@/components/ui/CustomButton";
 import AuthModal from "@/components/auth/AuthModal";
 import { ChevronDown, BookOpen, Shield, Users, Key, MessageCircle, Lock, Star, Sparkles } from "lucide-react";
 import TermsNotice from "@/components/auth/TermsNotice";
+import { motion, useScroll, useTransform, useInView } from "framer-motion";
 
 const Index = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authTab, setAuthTab] = useState<"login" | "register">("login");
-  const [isVisible, setIsVisible] = useState(Array(4).fill(false));
   const [scrollY, setScrollY] = useState(0);
+  const { scrollYProgress } = useScroll();
+  
+  // Refs for different sections to trigger animations
+  const heroRef = useRef<HTMLDivElement>(null);
+  const howItWorksRef = useRef<HTMLDivElement>(null);
+  const featuresRef = useRef<HTMLDivElement>(null);
+  const testimonialsRef = useRef<HTMLDivElement>(null);
+  const ctaRef = useRef<HTMLDivElement>(null);
+  
+  const isHeroInView = useInView(heroRef, { once: true });
+  const isHowItWorksInView = useInView(howItWorksRef, { once: true, amount: 0.3 });
+  const isFeaturesInView = useInView(featuresRef, { once: true, amount: 0.3 });
+  const isTestimonialsInView = useInView(testimonialsRef, { once: true, amount: 0.3 });
+  const isCtaInView = useInView(ctaRef, { once: true, amount: 0.5 });
+  
+  // Parallax effect values
+  const y1 = useTransform(scrollYProgress, [0, 1], [0, 300]);
+  const y2 = useTransform(scrollYProgress, [0, 1], [0, 200]);
+  const opacity1 = useTransform(scrollYProgress, [0, 0.2], [1, 0.5]);
+  const scale1 = useTransform(scrollYProgress, [0, 0.2], [1, 0.8]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,31 +43,41 @@ const Index = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry, index) => {
-        if (entry.isIntersecting) {
-          setTimeout(() => {
-            setIsVisible((prev) => {
-              const newState = [...prev];
-              newState[index] = true;
-              return newState;
-            });
-          }, index * 100);
-        }
-      });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll(".animate-on-scroll").forEach((el) => {
-      observer.observe(el);
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
   const openAuthModal = (tab: "login" | "register") => {
     setAuthTab(tab);
     setShowAuthModal(true);
+  };
+  
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: (i = 1) => ({
+      opacity: 1,
+      transition: { staggerChildren: 0.12, delayChildren: 0.04 * i }
+    })
+  };
+  
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: "spring", stiffness: 100 }
+    }
+  };
+  
+  const cardVariants = {
+    hidden: { y: 50, opacity: 0 },
+    visible: (i: number) => ({
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        damping: 15,
+        stiffness: 80,
+        delay: i * 0.1
+      }
+    })
   };
   
   // Testimonials data
@@ -80,41 +110,68 @@ const Index = () => {
       <NavBar />
       
       {/* Hero Section with parallax effect */}
-      <section className="pt-32 pb-20 bg-gradient-to-b from-[#F0F5FF] to-white relative overflow-hidden">
+      <motion.section 
+        ref={heroRef}
+        className="pt-24 pb-16 bg-gradient-to-b from-[#F0F5FF] to-white relative overflow-hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
+      >
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.015] z-0"></div>
-        <div 
+        
+        <motion.div 
           className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-ios-blue/5 blur-3xl"
-          style={{ transform: `translateY(${scrollY * 0.1}px)` }}
-        ></div>
-        <div 
+          style={{ y: y1, opacity: opacity1 }}
+        ></motion.div>
+        
+        <motion.div 
           className="absolute top-40 -left-24 w-72 h-72 rounded-full bg-ios-pink/5 blur-3xl"
-          style={{ transform: `translateY(${scrollY * 0.15}px)` }}
-        ></div>
+          style={{ y: y2, scale: scale1 }}
+        ></motion.div>
         
         <div className="page-container relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-white/80 backdrop-blur-md border border-ios-gray-5/50 text-sm text-ios-blue font-medium mb-8 shadow-sm">
+          <motion.div 
+            className="max-w-3xl mx-auto text-center"
+            variants={containerVariants}
+            initial="hidden"
+            animate={isHeroInView ? "visible" : "hidden"}
+          >
+            <motion.div 
+              className="inline-flex items-center px-4 py-2 rounded-full bg-white/80 backdrop-blur-md border border-ios-gray-5/50 text-sm text-ios-blue font-medium mb-6 shadow-sm"
+              variants={itemVariants}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
               <Sparkles className="h-4 w-4 mr-2" />
               <span>Una nuova esperienza di journaling</span>
-            </div>
+            </motion.div>
             
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-medium leading-tight mb-6 tracking-tight">
+            <motion.h1 
+              className="text-4xl md:text-5xl lg:text-6xl font-medium leading-tight mb-5 tracking-tight"
+              variants={itemVariants}
+            >
               Racconta la tua storia, <br />
               <span className="bg-gradient-to-r from-ios-blue via-ios-indigo to-ios-purple bg-clip-text text-transparent font-semibold">
                 proteggi la tua privacy
               </span>
-            </h1>
+            </motion.h1>
             
-            <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Uno spazio sicuro dove esprimere liberamente i tuoi pensieri. Scrivi nel tuo diario personale, condividi in modo anonimo e connettiti con altri in un percorso simile al tuo.
-            </p>
+            <motion.p 
+              className="text-lg text-gray-600 max-w-2xl mx-auto mb-8 leading-relaxed"
+              variants={itemVariants}
+            >
+              Uno spazio sicuro dove esprimere liberamente i tuoi pensieri. Scrivi nel tuo diario personale, condividi in modo anonimo e connettiti con altri.
+            </motion.p>
             
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <motion.div 
+              className="flex flex-col sm:flex-row items-center justify-center gap-4"
+              variants={itemVariants}
+            >
               <CustomButton 
                 variant="ios" 
                 size="lg" 
                 onClick={() => openAuthModal("register")}
-                className="w-full sm:w-auto shadow-lg shadow-ios-blue/20"
+                className="w-full sm:w-auto shadow-lg shadow-ios-blue/20 hover:scale-105 transition-transform"
               >
                 Inizia il tuo diario
               </CustomButton>
@@ -123,58 +180,98 @@ const Index = () => {
                 variant="outline" 
                 size="lg"
                 onClick={() => openAuthModal("login")}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto hover:scale-105 transition-transform"
                 isIOS={true}
               >
                 Accedi
               </CustomButton>
-            </div>
+            </motion.div>
             
-            <div className="mt-16 mx-auto max-w-3xl">
-              <div className="relative aspect-[16/9] rounded-3xl overflow-hidden border border-ios-gray-5/50 shadow-2xl shadow-ios-gray-1/10">
+            <motion.div 
+              className="mt-10 mx-auto max-w-3xl"
+              variants={itemVariants}
+            >
+              <motion.div 
+                className="relative aspect-[16/9] rounded-3xl overflow-hidden border border-ios-gray-5/50 shadow-2xl shadow-ios-gray-1/10"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300, damping: 15 }}
+              >
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/5 to-black/0"></div>
                 <img 
                   src="https://placehold.co/1200x675/F9FAFB/e2e8f0?text=Whispering+Diary+Screenshot" 
                   alt="Whispering Diary App Interface" 
                   className="w-full h-full object-cover"
                 />
-              </div>
-            </div>
-          </div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
           
-          <div className="mt-16 flex justify-center">
+          <motion.div 
+            className="mt-8 flex justify-center"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1, duration: 0.5 }}
+          >
             <Link 
               to="#features" 
               className="flex flex-col items-center text-gray-500 hover:text-ios-blue transition-colors"
             >
-              <span className="text-sm mb-2">Scopri di più</span>
-              <ChevronDown className="h-5 w-5 animate-pulse-subtle" />
+              <span className="text-sm mb-1">Scopri di più</span>
+              <ChevronDown className="h-5 w-5 animate-bounce" />
             </Link>
-          </div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
       
       {/* How It Works Section */}
-      <section className="py-24 bg-white">
+      <motion.section 
+        ref={howItWorksRef}
+        className="py-16 bg-white"
+        initial={{ opacity: 0 }}
+        animate={isHowItWorksInView ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ duration: 0.6 }}
+      >
         <div className="page-container">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-ios-blue/10 text-sm text-ios-blue font-medium mb-4">
+          <motion.div 
+            className="text-center mb-10"
+            variants={containerVariants}
+            initial="hidden"
+            animate={isHowItWorksInView ? "visible" : "hidden"}
+          >
+            <motion.div
+              variants={itemVariants}
+              className="inline-flex items-center px-3 py-1 rounded-full bg-ios-blue/10 text-sm text-ios-blue font-medium mb-4"
+            >
               Come funziona
-            </div>
-            <h2 className="text-4xl font-medium mb-6 tracking-tight">
+            </motion.div>
+            
+            <motion.h2 
+              variants={itemVariants}
+              className="text-3xl md:text-4xl font-medium mb-4 tracking-tight"
+            >
               Semplicità e Privacy in Ogni Passaggio
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            </motion.h2>
+            
+            <motion.p 
+              variants={itemVariants}
+              className="text-gray-600 max-w-2xl mx-auto"
+            >
               Un'esperienza utente intuitiva che mette la tua privacy al primo posto in ogni momento.
-            </p>
-          </div>
+            </motion.p>
+          </motion.div>
           
-          <div className="grid md:grid-cols-3 gap-8 mt-12">
+          <motion.div 
+            className="grid md:grid-cols-3 gap-6 mt-8"
+            variants={containerVariants}
+            initial="hidden"
+            animate={isHowItWorksInView ? "visible" : "hidden"}
+            custom={1}
+          >
             {[
               {
                 icon: <Lock className="h-8 w-8 text-white" />,
                 title: "Accesso Sicuro",
-                description: "Accedi con Google, Microsoft o il tuo telefono. Nessuna password da ricordare.",
+                description: "Accedi con la tua email. La tua sicurezza è la nostra priorità.",
                 color: "bg-ios-blue",
                 step: "01"
               },
@@ -193,40 +290,76 @@ const Index = () => {
                 step: "03"
               }
             ].map((step, index) => (
-              <div
+              <motion.div
                 key={step.title}
-                className="ios-card p-8 flex flex-col items-center text-center relative group hover:shadow-xl transition-all duration-300"
+                custom={index}
+                variants={cardVariants}
+                whileHover={{ y: -5, transition: { type: "spring", stiffness: 300 } }}
+                className="ios-card p-7 flex flex-col items-center text-center relative group hover:shadow-xl transition-all duration-300"
               >
                 <div className="absolute -right-3 -top-3 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md font-medium text-ios-blue">
                   {step.step}
                 </div>
-                <div className={`rounded-2xl p-4 inline-flex items-center justify-center mb-6 ${step.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                <motion.div 
+                  className={`rounded-2xl p-4 inline-flex items-center justify-center mb-5 ${step.color} shadow-lg`}
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 10 }}
+                >
                   {step.icon}
-                </div>
-                <h3 className="text-xl font-medium mb-3">{step.title}</h3>
+                </motion.div>
+                <h3 className="text-xl font-medium mb-2">{step.title}</h3>
                 <p className="text-gray-600">{step.description}</p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
       
       {/* Features Section */}
-      <section id="features" className="py-24 bg-gradient-to-b from-white to-[#F9FAFB]">
+      <motion.section 
+        ref={featuresRef}
+        id="features" 
+        className="py-16 bg-gradient-to-b from-white to-[#F9FAFB]"
+        initial={{ opacity: 0 }}
+        animate={isFeaturesInView ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ duration: 0.6 }}
+      >
         <div className="page-container">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-ios-green/10 text-sm text-ios-green font-medium mb-4">
+          <motion.div 
+            className="text-center mb-10"
+            variants={containerVariants}
+            initial="hidden"
+            animate={isFeaturesInView ? "visible" : "hidden"}
+          >
+            <motion.div 
+              variants={itemVariants}
+              className="inline-flex items-center px-3 py-1 rounded-full bg-ios-green/10 text-sm text-ios-green font-medium mb-4"
+            >
               Funzionalità
-            </div>
-            <h2 className="text-4xl font-medium mb-6 tracking-tight">
+            </motion.div>
+            
+            <motion.h2 
+              variants={itemVariants}
+              className="text-3xl md:text-4xl font-medium mb-4 tracking-tight"
+            >
               I Tuoi Pensieri, a Modo Tuo
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Whispering Diary offre una combinazione unica di journaling privato con l'opzione di condividere in modo anonimo e connettersi con gli altri.
-            </p>
-          </div>
+            </motion.h2>
+            
+            <motion.p 
+              variants={itemVariants}
+              className="text-gray-600 max-w-2xl mx-auto"
+            >
+              Whispering Diary offre una combinazione unica di journaling privato con l'opzione di condividere in modo anonimo.
+            </motion.p>
+          </motion.div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <motion.div 
+            className="grid md:grid-cols-2 lg:grid-cols-4 gap-5"
+            variants={containerVariants}
+            initial="hidden"
+            animate={isFeaturesInView ? "visible" : "hidden"}
+            custom={1}
+          >
             {[
               {
                 icon: <BookOpen className="h-8 w-8 text-ios-blue" />,
@@ -236,7 +369,7 @@ const Index = () => {
               {
                 icon: <Shield className="h-8 w-8 text-ios-green" />,
                 title: "Condivisione Anonima",
-                description: "Condividi le tue esperienze in modo anonimo quando vuoi connetterti senza rivelare la tua identità."
+                description: "Condividi le tue esperienze in modo anonimo quando vuoi connetterti."
               },
               {
                 icon: <Users className="h-8 w-8 text-ios-purple" />,
@@ -249,48 +382,94 @@ const Index = () => {
                 description: "I tuoi dati sono crittografati e sicuri, dandoti tranquillità."
               }
             ].map((feature, index) => (
-              <div
+              <motion.div
                 key={feature.title}
-                className={`animate-on-scroll ios-card p-8 transform transition-all duration-500 hover:-translate-y-2 hover:shadow-lg ${
-                  isVisible[index] ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
-                }`}
+                custom={index}
+                variants={cardVariants}
+                whileHover={{ 
+                  y: -6, 
+                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" 
+                }}
+                className="ios-card p-6 transform transition-all duration-500"
               >
-                <div className="rounded-2xl p-3 inline-block mb-4 bg-[#F5F7FA]">
+                <motion.div 
+                  className="rounded-2xl p-3 inline-block mb-4 bg-[#F5F7FA]"
+                  whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                  transition={{ duration: 0.5 }}
+                >
                   {feature.icon}
-                </div>
-                <h3 className="text-xl font-medium mb-3">{feature.title}</h3>
+                </motion.div>
+                <h3 className="text-xl font-medium mb-2">{feature.title}</h3>
                 <p className="text-gray-600">{feature.description}</p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Testimonials Section */}
-      <section className="py-24 bg-white">
+      <motion.section 
+        ref={testimonialsRef}
+        className="py-16 bg-white"
+        initial={{ opacity: 0 }}
+        animate={isTestimonialsInView ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ duration: 0.6 }}
+      >
         <div className="page-container">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-ios-yellow/10 text-sm text-ios-yellow font-medium mb-4">
+          <motion.div 
+            className="text-center mb-10"
+            variants={containerVariants}
+            initial="hidden"
+            animate={isTestimonialsInView ? "visible" : "hidden"}
+          >
+            <motion.div 
+              variants={itemVariants}
+              className="inline-flex items-center px-3 py-1 rounded-full bg-ios-yellow/10 text-sm text-ios-yellow font-medium mb-4"
+            >
               Recensioni
-            </div>
-            <h2 className="text-4xl font-medium mb-6 tracking-tight">
+            </motion.div>
+            
+            <motion.h2 
+              variants={itemVariants}
+              className="text-3xl md:text-4xl font-medium mb-4 tracking-tight"
+            >
               Cosa Dicono Gli Utenti
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            </motion.h2>
+            
+            <motion.p 
+              variants={itemVariants}
+              className="text-gray-600 max-w-2xl mx-auto"
+            >
               Scopri come Whispering Diary sta aiutando le persone a trovare la loro voce in uno spazio sicuro.
-            </p>
-          </div>
+            </motion.p>
+          </motion.div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <motion.div 
+            className="grid md:grid-cols-3 gap-6"
+            variants={containerVariants}
+            initial="hidden"
+            animate={isTestimonialsInView ? "visible" : "hidden"}
+            custom={1}
+          >
             {testimonials.map((testimonial, index) => (
-              <div 
+              <motion.div 
                 key={testimonial.name}
-                className="ios-card p-8 hover:shadow-lg transition-all duration-300"
+                custom={index}
+                variants={cardVariants}
+                whileHover={{ 
+                  scale: 1.03,
+                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                }}
+                className="ios-card p-6 transition-all duration-300"
               >
                 <div className="flex items-start mb-4">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center font-medium text-lg ${testimonial.color} mr-4`}>
+                  <motion.div 
+                    className={`w-12 h-12 rounded-full flex items-center justify-center font-medium text-lg ${testimonial.color} mr-4`}
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 10 }}
+                  >
                     {testimonial.avatar}
-                  </div>
+                  </motion.div>
                   <div>
                     <h4 className="font-medium">{testimonial.name}</h4>
                     <p className="text-gray-500 text-sm">{testimonial.role}</p>
@@ -298,47 +477,108 @@ const Index = () => {
                 </div>
                 <div className="flex mb-4">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 text-ios-yellow fill-ios-yellow" />
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.3 + i * 0.1 }}
+                    >
+                      <Star className="h-5 w-5 text-ios-yellow fill-ios-yellow" />
+                    </motion.div>
                   ))}
                 </div>
                 <p className="text-gray-600 italic">{testimonial.text}</p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
       
       {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-b from-[#F9FAFB] to-white">
+      <motion.section 
+        ref={ctaRef}
+        className="py-16 bg-gradient-to-b from-[#F9FAFB] to-white"
+        initial={{ opacity: 0 }}
+        animate={isCtaInView ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ duration: 0.6 }}
+      >
         <div className="page-container">
-          <div className="max-w-3xl mx-auto text-center ios-card py-16 px-8 shadow-xl relative overflow-hidden">
+          <motion.div 
+            className="max-w-3xl mx-auto text-center ios-card py-12 px-6 shadow-xl relative overflow-hidden"
+            variants={containerVariants}
+            initial="hidden"
+            animate={isCtaInView ? "visible" : "hidden"}
+            whileHover={{ y: -5 }}
+            transition={{ type: "spring", stiffness: 200, damping: 15 }}
+          >
             <div className="absolute inset-0 bg-white opacity-90 z-0"></div>
-            <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-ios-blue/5 blur-3xl"></div>
-            <div className="absolute top-40 -left-24 w-72 h-72 rounded-full bg-ios-pink/5 blur-3xl"></div>
+            <motion.div 
+              className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-ios-blue/5 blur-3xl"
+              animate={{ 
+                scale: [1, 1.2, 1],
+                opacity: [0.5, 0.8, 0.5]
+              }}
+              transition={{ 
+                duration: 8,
+                repeat: Infinity,
+                repeatType: "reverse"
+              }}
+            ></motion.div>
+            
+            <motion.div 
+              className="absolute top-40 -left-24 w-72 h-72 rounded-full bg-ios-pink/5 blur-3xl"
+              animate={{ 
+                scale: [1, 1.1, 1],
+                opacity: [0.5, 0.7, 0.5]
+              }}
+              transition={{ 
+                duration: 6,
+                repeat: Infinity,
+                repeatType: "reverse",
+                delay: 1
+              }}
+            ></motion.div>
             
             <div className="relative z-10">
-              <h2 className="text-3xl md:text-4xl font-medium mb-4 tracking-tight">
-                Pronto a Iniziare il Tuo Viaggio?
-              </h2>
-              <p className="text-gray-600 max-w-2xl mx-auto mb-8">
-                Unisciti a migliaia di altri che hanno trovato chiarezza, connessione e conforto attraverso la scrittura.
-              </p>
-              <CustomButton 
-                variant="ios"
-                size="lg" 
-                onClick={() => openAuthModal("register")}
-                className="shadow-lg shadow-ios-blue/20"
+              <motion.h2 
+                variants={itemVariants}
+                className="text-3xl font-medium mb-3 tracking-tight"
               >
-                Crea il Tuo Account Gratuito
-              </CustomButton>
+                Pronto a Iniziare il Tuo Viaggio?
+              </motion.h2>
               
-              <div className="mt-8">
+              <motion.p 
+                variants={itemVariants}
+                className="text-gray-600 max-w-2xl mx-auto mb-6"
+              >
+                Unisciti a migliaia di altri che hanno trovato chiarezza, connessione e conforto attraverso la scrittura.
+              </motion.p>
+              
+              <motion.div
+                variants={itemVariants}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <CustomButton 
+                  variant="ios"
+                  size="lg" 
+                  onClick={() => openAuthModal("register")}
+                  className="shadow-lg shadow-ios-blue/20"
+                >
+                  Crea il Tuo Account Gratuito
+                </CustomButton>
+              </motion.div>
+              
+              <motion.div 
+                className="mt-6"
+                variants={itemVariants}
+              >
                 <TermsNotice />
-              </div>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
       
       <Footer />
       

@@ -2,21 +2,24 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type AuthContextType = {
   session: Session | null;
   user: User | null;
   isLoading: boolean;
-  signInWithPhone: (phone: string) => Promise<{
+  signInWithEmail: (email: string, password: string) => Promise<{
     error: Error | null;
     data: any;
   }>;
-  verifyOTP: (phone: string, token: string) => Promise<{
+  signUpWithEmail: (email: string, password: string) => Promise<{
     error: Error | null;
     data: any;
   }>;
-  signInWithGoogle: () => Promise<void>;
-  signInWithMicrosoft: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{
+    error: Error | null;
+    data: any;
+  }>;
   signOut: () => Promise<void>;
 };
 
@@ -49,60 +52,82 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const signInWithPhone = async (phone: string) => {
-    return supabase.auth.signInWithOtp({
-      phone
-    });
-  };
-
-  const verifyOTP = async (phone: string, token: string) => {
-    return supabase.auth.verifyOtp({
-      phone,
-      token,
-      type: 'sms'
-    });
-  };
-
-  const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin
+  const signInWithEmail = async (email: string, password: string) => {
+    try {
+      const response = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (response.error) {
+        toast.error(response.error.message);
       }
-    });
-    
-    if (error) {
-      console.error("Google sign-in error:", error);
-      throw error;
+      
+      return response;
+    } catch (error: any) {
+      toast.error(error.message || "Errore durante l'accesso");
+      return { error, data: null };
     }
   };
 
-  const signInWithMicrosoft = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'azure',
-      options: {
-        redirectTo: window.location.origin
+  const signUpWithEmail = async (email: string, password: string) => {
+    try {
+      const response = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+      
+      if (response.error) {
+        toast.error(response.error.message);
+      } else {
+        toast.success("Email di verifica inviata! Controlla la tua casella di posta.");
       }
-    });
-    
-    if (error) {
-      console.error("Microsoft sign-in error:", error);
-      throw error;
+      
+      return response;
+    } catch (error: any) {
+      toast.error(error.message || "Errore durante la registrazione");
+      return { error, data: null };
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    try {
+      const response = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+      
+      if (response.error) {
+        toast.error(response.error.message);
+      } else {
+        toast.success("Email per il reset della password inviata!");
+      }
+      
+      return response;
+    } catch (error: any) {
+      toast.error(error.message || "Errore durante il reset della password");
+      return { error, data: null };
     }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+      toast.success("Logout effettuato con successo");
+    } catch (error: any) {
+      toast.error(error.message || "Errore durante il logout");
+    }
   };
 
   const value = {
     session,
     user,
     isLoading,
-    signInWithPhone,
-    verifyOTP,
-    signInWithGoogle,
-    signInWithMicrosoft,
+    signInWithEmail,
+    signUpWithEmail,
+    resetPassword,
     signOut,
   };
 
