@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,47 +21,97 @@ import {
   Key,
   LogOut
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const Profile = () => {
-  // User profile state
-  const [profile, setProfile] = useState({
-    name: "Alex Johnson",
-    email: "alex.johnson@example.com",
-    bio: "Writer, thinker, and avid traveler. I use this platform to reflect on my experiences and connect with others on similar journeys.",
-    avatar: "", // URL would go here
-    notifications: {
-      comments: true,
-      likes: true,
-      mentions: true,
-      newsletters: false,
+  const { user, signOut } = useAuth();
+  const { profile, loading, updateProfile } = useProfile();
+  const navigate = useNavigate();
+  
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!user && !loading) {
+      navigate("/");
+      toast.error("Please log in to view your profile");
     }
+  }, [user, loading, navigate]);
+  
+  const [formData, setFormData] = useState({
+    full_name: "",
+    bio: "",
+    avatar_url: "",
   });
   
   const [isEditing, setIsEditing] = useState(false);
   
+  // Update form data when profile is loaded
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || "",
+        bio: profile.bio || "",
+        avatar_url: profile.avatar_url || "",
+      });
+    }
+  }, [profile]);
+  
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setProfile(prev => ({
+    setFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
   
-  const handleNotificationChange = (key: keyof typeof profile.notifications) => {
-    setProfile(prev => ({
-      ...prev,
-      notifications: {
-        ...prev.notifications,
-        [key]: !prev.notifications[key]
-      }
-    }));
+  const handleNotificationChange = (key: string) => {
+    // Implementation for notification settings
+    console.log(`Changed notification setting: ${key}`);
   };
   
-  const handleSaveProfile = () => {
-    setIsEditing(false);
-    // Here you would typically save to a backend
-    console.log("Saving profile:", profile);
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { error } = await updateProfile(formData);
+      if (error) throw error;
+      
+      setIsEditing(false);
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      toast.error("Failed to update profile");
+      console.error("Error updating profile:", error);
+    }
   };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+  
+  const getInitials = () => {
+    if (profile?.full_name) {
+      return profile.full_name
+        .split(" ")
+        .map(n => n[0])
+        .join("")
+        .toUpperCase();
+    } else if (profile?.username) {
+      return profile.username.substring(0, 2).toUpperCase();
+    }
+    return "U";
+  };
+  
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <div className="animate-pulse">Loading profile...</div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -79,13 +129,13 @@ const Profile = () => {
             <div className="lg:col-span-1">
               <div className="glass-card p-6 text-center">
                 <Avatar className="h-24 w-24 mx-auto mb-4">
-                  <AvatarImage src={profile.avatar} alt={profile.name} />
+                  <AvatarImage src={formData.avatar_url} alt={formData.full_name} />
                   <AvatarFallback className="text-2xl bg-primary/10 text-primary">
-                    {profile.name.split(' ').map(n => n[0]).join('')}
+                    {getInitials()}
                   </AvatarFallback>
                 </Avatar>
-                <h2 className="text-xl font-medium mb-1">{profile.name}</h2>
-                <p className="text-gray-500 text-sm mb-4">{profile.email}</p>
+                <h2 className="text-xl font-medium mb-1">{formData.full_name || "Your Name"}</h2>
+                <p className="text-gray-500 text-sm mb-4">{user.email}</p>
                 <div className="flex justify-center">
                   <Button variant="outline" className="w-full" onClick={() => setIsEditing(true)}>
                     <Edit className="h-4 w-4 mr-2" /> Edit Profile
@@ -117,7 +167,11 @@ const Profile = () => {
                     </Button>
                   </li>
                   <li>
-                    <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive/90">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start text-destructive hover:text-destructive/90"
+                      onClick={handleSignOut}
+                    >
                       <LogOut className="h-4 w-4 mr-2" /> Sign Out
                     </Button>
                   </li>
@@ -157,9 +211,9 @@ const Profile = () => {
                               <Label htmlFor="avatar" className="block mb-3">Profile Picture</Label>
                               <div className="flex items-center space-x-4">
                                 <Avatar className="h-16 w-16">
-                                  <AvatarImage src={profile.avatar} alt={profile.name} />
+                                  <AvatarImage src={formData.avatar_url} alt={formData.full_name} />
                                   <AvatarFallback className="bg-primary/10 text-primary">
-                                    {profile.name.split(' ').map(n => n[0]).join('')}
+                                    {getInitials()}
                                   </AvatarFallback>
                                 </Avatar>
                                 <Button variant="outline" size="sm" className="gap-2">
@@ -170,11 +224,11 @@ const Profile = () => {
                             
                             <div className="space-y-4">
                               <div>
-                                <Label htmlFor="name">Name</Label>
+                                <Label htmlFor="full_name">Name</Label>
                                 <Input 
-                                  id="name" 
-                                  name="name" 
-                                  value={profile.name}
+                                  id="full_name" 
+                                  name="full_name" 
+                                  value={formData.full_name}
                                   onChange={handleProfileChange}
                                 />
                               </div>
@@ -182,12 +236,13 @@ const Profile = () => {
                               <div>
                                 <Label htmlFor="email">Email</Label>
                                 <Input 
-                                  id="email" 
-                                  name="email" 
+                                  id="email"
                                   type="email" 
-                                  value={profile.email}
-                                  onChange={handleProfileChange}
+                                  value={user.email || ""}
+                                  disabled
+                                  className="bg-gray-100"
                                 />
+                                <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
                               </div>
                               
                               <div>
@@ -195,7 +250,7 @@ const Profile = () => {
                                 <Textarea 
                                   id="bio" 
                                   name="bio" 
-                                  value={profile.bio}
+                                  value={formData.bio}
                                   onChange={handleProfileChange}
                                   rows={4}
                                 />
@@ -220,20 +275,20 @@ const Profile = () => {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6">
                             <div>
                               <div className="text-sm font-medium text-gray-500 mb-1">Name</div>
-                              <div>{profile.name}</div>
+                              <div>{formData.full_name || "Not set"}</div>
                             </div>
                             <div>
                               <div className="text-sm font-medium text-gray-500 mb-1">Email</div>
                               <div className="flex items-center">
                                 <Mail className="h-4 w-4 text-gray-400 mr-2" />
-                                {profile.email}
+                                {user.email}
                               </div>
                             </div>
                           </div>
                           
                           <div>
                             <div className="text-sm font-medium text-gray-500 mb-1">Bio</div>
-                            <p>{profile.bio}</p>
+                            <p>{formData.bio || "No bio provided yet."}</p>
                           </div>
                         </div>
                       )}

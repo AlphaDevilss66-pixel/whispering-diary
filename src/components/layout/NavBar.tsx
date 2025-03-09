@@ -90,6 +90,7 @@ const NavBar = () => {
       animate="animate"
     >
       <div className="page-container flex items-center justify-between h-16">
+        {/* Logo */}
         <Link to="/" className="flex items-center gap-2 hover:scale-105 transition-transform">
           <motion.span 
             className="font-medium text-xl text-gradient"
@@ -101,6 +102,7 @@ const NavBar = () => {
           </motion.span>
         </Link>
 
+        {/* Navigation Links */}
         <nav className="hidden md:flex items-center gap-6">
           <motion.div className="flex items-center gap-6">
             {[
@@ -130,6 +132,7 @@ const NavBar = () => {
           </motion.div>
         </nav>
 
+        {/* User Menu or Auth Buttons */}
         <AnimatePresence mode="wait">
           <motion.div 
             className="flex items-center gap-4"
@@ -191,11 +194,14 @@ const NavBar = () => {
         </AnimatePresence>
       </div>
 
-      <AuthModal 
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        defaultTab={authTab}
-      />
+      {/* Auth Modal - only show when not logged in */}
+      {!user && (
+        <AuthModal 
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          defaultTab={authTab}
+        />
+      )}
     </motion.header>
   );
 };
