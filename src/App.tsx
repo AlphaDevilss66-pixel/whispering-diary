@@ -17,13 +17,17 @@ import NotFound from "./pages/NotFound";
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
   
-  // If still loading auth state, render nothing
   if (isLoading) return null;
-  
-  // If user is authenticated, redirect to dashboard
   if (user) return <Navigate to="/dashboard" />;
+  return <>{children}</>;
+};
+
+// Auth guard component that redirects unauthenticated users to the login page
+const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, isLoading } = useAuth();
   
-  // Otherwise render the children (public content)
+  if (isLoading) return null;
+  if (!user) return <Navigate to="/" />;
   return <>{children}</>;
 };
 
@@ -32,9 +36,9 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<PublicRoute><Index /></PublicRoute>} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/explore" element={<Explore />} />
-      <Route path="/profile" element={<Profile />} />
+      <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+      <Route path="/explore" element={<PrivateRoute><Explore /></PrivateRoute>} />
+      <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
       {/* This route handles OAuth redirects */}
       <Route path="/auth/callback" element={<Navigate to="/dashboard" />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
