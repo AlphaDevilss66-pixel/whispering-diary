@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 type AuthContextType = {
   session: Session | null;
@@ -29,6 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Get initial session
@@ -36,21 +38,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user || null);
       setIsLoading(false);
+      
+      // If user is logged in, redirect to dashboard
+      if (session?.user) {
+        navigate("/dashboard");
+      }
     });
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user || null);
         setIsLoading(false);
+        
+        // If user just signed in, redirect to dashboard
+        if (event === 'SIGNED_IN') {
+          navigate("/dashboard");
+        }
       }
     );
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
