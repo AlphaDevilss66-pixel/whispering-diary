@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
@@ -6,13 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   User, 
   Settings, 
-  Bell, 
   Shield, 
   Edit, 
   Save, 
@@ -23,7 +20,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
-import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -32,7 +28,6 @@ const Profile = () => {
   const { profile, loading, updateProfile } = useProfile();
   const navigate = useNavigate();
   
-  // Redirect if not logged in
   useEffect(() => {
     if (!user && !loading) {
       navigate("/");
@@ -48,7 +43,6 @@ const Profile = () => {
   
   const [isEditing, setIsEditing] = useState(false);
   
-  // Update form data when profile is loaded
   useEffect(() => {
     if (profile) {
       setFormData({
@@ -65,11 +59,6 @@ const Profile = () => {
       ...prev,
       [name]: value
     }));
-  };
-  
-  const handleNotificationChange = (key: string) => {
-    // Implementation for notification settings
-    console.log(`Changed notification setting: ${key}`);
   };
   
   const handleSaveProfile = async () => {
@@ -125,7 +114,6 @@ const Profile = () => {
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Sidebar */}
             <div className="lg:col-span-1">
               <div className="glass-card p-6 text-center">
                 <Avatar className="h-24 w-24 mx-auto mb-4">
@@ -158,11 +146,6 @@ const Profile = () => {
                   </li>
                   <li>
                     <Button variant="ghost" className="w-full justify-start">
-                      <Bell className="h-4 w-4 mr-2" /> Notifications
-                    </Button>
-                  </li>
-                  <li>
-                    <Button variant="ghost" className="w-full justify-start">
                       <Settings className="h-4 w-4 mr-2" /> Settings
                     </Button>
                   </li>
@@ -179,13 +162,11 @@ const Profile = () => {
               </div>
             </div>
             
-            {/* Main Content */}
             <div className="lg:col-span-2">
               <Tabs defaultValue="profile" className="w-full">
                 <TabsList className="mb-6">
                   <TabsTrigger value="profile">Profile</TabsTrigger>
                   <TabsTrigger value="privacy">Privacy</TabsTrigger>
-                  <TabsTrigger value="notifications">Notifications</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="profile">
@@ -343,14 +324,6 @@ const Profile = () => {
                         
                         <div className="flex items-center justify-between">
                           <div>
-                            <h4 className="font-medium">Anonymous Sharing</h4>
-                            <p className="text-sm text-gray-500">Allow your public entries to be shared anonymously</p>
-                          </div>
-                          <Switch defaultChecked />
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div>
                             <h4 className="font-medium">Comment Permissions</h4>
                             <p className="text-sm text-gray-500">Control who can comment on your public entries</p>
                           </div>
@@ -366,63 +339,6 @@ const Profile = () => {
                       
                       <div className="pt-4 border-t border-gray-100">
                         <Button>Save Privacy Settings</Button>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="notifications">
-                  <div className="glass-card p-6">
-                    <h3 className="text-lg font-medium mb-4">Notification Preferences</h3>
-                    <div className="space-y-6">
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-medium">Comments</h4>
-                            <p className="text-sm text-gray-500">Receive notifications when someone comments on your entries</p>
-                          </div>
-                          <Switch
-                            checked={profile.notifications.comments}
-                            onCheckedChange={() => handleNotificationChange('comments')}
-                          />
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-medium">Likes</h4>
-                            <p className="text-sm text-gray-500">Receive notifications when someone likes your entries</p>
-                          </div>
-                          <Switch
-                            checked={profile.notifications.likes}
-                            onCheckedChange={() => handleNotificationChange('likes')}
-                          />
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-medium">Mentions</h4>
-                            <p className="text-sm text-gray-500">Receive notifications when you're mentioned in a comment</p>
-                          </div>
-                          <Switch
-                            checked={profile.notifications.mentions}
-                            onCheckedChange={() => handleNotificationChange('mentions')}
-                          />
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-medium">Email Newsletter</h4>
-                            <p className="text-sm text-gray-500">Receive weekly digests and updates</p>
-                          </div>
-                          <Switch
-                            checked={profile.notifications.newsletters}
-                            onCheckedChange={() => handleNotificationChange('newsletters')}
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="pt-4 border-t border-gray-100">
-                        <Button>Save Notification Preferences</Button>
                       </div>
                     </div>
                   </div>
