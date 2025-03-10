@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,18 +32,15 @@ const DiaryForm = () => {
     setIsSubmitting(true);
     
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('diary_entries')
-        .insert([
-          { 
-            title,
-            content,
-            is_private: isPrivate,
-            is_anonymous: isAnonymous,
-            user_id: user.id
-          }
-        ])
-        .select();
+        .insert({
+          title,
+          content,
+          is_private: isPrivate,
+          is_anonymous: isAnonymous,
+          user_id: user.id
+        });
         
       if (error) throw error;
       

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
@@ -21,7 +20,6 @@ type DiaryEntry = {
   tags?: string[];
 };
 
-// Popular tags for filter section (we'll implement actual tags later)
 const popularTags = [
   "reflection", "growth", "vulnerability", "travel", 
   "friendship", "healing", "courage", "mindfulness"
@@ -40,7 +38,7 @@ const Explore = () => {
         setLoading(true);
         const { data, error } = await supabase
           .from('diary_entries')
-          .select('*')
+          .select('id, title, content, created_at, is_private, likes, comments')
           .eq('is_private', false)
           .order('created_at', { ascending: false });
           
@@ -48,16 +46,8 @@ const Explore = () => {
           throw error;
         }
         
-        // Transform the data
-        const transformedEntries = data.map(entry => ({
-          id: entry.id,
-          title: entry.title,
-          content: entry.content,
-          created_at: entry.created_at,
-          is_private: entry.is_private,
-          likes: entry.likes || 0,
-          comments: entry.comments || 0,
-          // Add dummy tags for now - we'll implement real tags later
+        const transformedEntries = (data as DiaryEntry[]).map(entry => ({
+          ...entry,
           tags: popularTags.slice(0, Math.floor(Math.random() * 3) + 1)
         }));
         
@@ -81,7 +71,6 @@ const Explore = () => {
     }
   };
   
-  // Filter entries based on search and tags
   const filteredEntries = entries.filter(entry => {
     const matchesSearch = 
       entry.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -94,7 +83,6 @@ const Explore = () => {
     return matchesSearch && matchesTags;
   });
   
-  // Sort entries based on the selected option
   const sortedEntries = [...filteredEntries].sort((a, b) => {
     switch (sortBy) {
       case "recent":
@@ -102,7 +90,6 @@ const Explore = () => {
       case "popular":
         return b.likes - a.likes;
       case "trending":
-        // For trending, we use a combination of recency and popularity
         const aScore = b.likes / ((Date.now() - new Date(a.created_at).getTime()) / 86400000);
         const bScore = a.likes / ((Date.now() - new Date(b.created_at).getTime()) / 86400000);
         return bScore - aScore;
@@ -123,7 +110,6 @@ const Explore = () => {
           </div>
           
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Filters Sidebar */}
             <div className="w-full lg:w-64 glass-card p-6 h-fit sticky top-24">
               <div className="mb-6">
                 <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
@@ -187,7 +173,6 @@ const Explore = () => {
               </div>
             </div>
             
-            {/* Main Content */}
             <div className="flex-1">
               <div className="mb-6 flex items-center justify-between">
                 <h3 className="text-lg font-medium flex items-center gap-2">

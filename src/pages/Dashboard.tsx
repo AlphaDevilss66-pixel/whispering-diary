@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
@@ -38,7 +37,7 @@ const Dashboard = () => {
         setLoading(true);
         const { data, error } = await supabase
           .from('diary_entries')
-          .select('*')
+          .select('id, title, content, created_at, is_private, likes, comments')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
           
@@ -46,18 +45,7 @@ const Dashboard = () => {
           throw error;
         }
         
-        // Transform the data to match our DiaryEntry type
-        const transformedEntries = data.map(entry => ({
-          id: entry.id,
-          title: entry.title,
-          content: entry.content,
-          created_at: entry.created_at,
-          is_private: entry.is_private,
-          likes: entry.likes || 0,
-          comments: entry.comments || 0
-        }));
-        
-        setDiaryEntries(transformedEntries);
+        setDiaryEntries(data as DiaryEntry[]);
       } catch (error) {
         console.error("Error fetching diary entries:", error);
         toast.error("Failed to load diary entries");
