@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
 import DiaryCard from "@/components/diary/DiaryCard";
@@ -7,72 +7,21 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Clock, Heart, Zap, TrendingUp } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-// Mock data for demonstration
-const mockEntries = [
-  {
-    id: "101",
-    title: "The Courage to Be Vulnerable",
-    content: "Today I shared something I've never told anyone before. The weight I've been carrying for years feels lighter now. It's strange how putting words to our deepest fears can diminish their power over us.",
-    date: "2023-09-18T14:30:00Z",
-    likes: 142,
-    comments: 37,
-    isPrivate: false,
-    tags: ["vulnerability", "courage", "healing"]
-  },
-  {
-    id: "102",
-    title: "Lost and Found in Tokyo",
-    content: "I got completely lost in the backstreets of Tokyo yesterday. What started as a moment of panic turned into one of the most memorable experiences of my trip. A kind elderly woman who spoke no English guided me back, communicating purely through gestures and smiles.",
-    date: "2023-09-17T08:15:00Z",
-    likes: 98,
-    comments: 24,
-    isPrivate: false,
-    tags: ["travel", "kindness", "japan"]
-  },
-  {
-    id: "103",
-    title: "The Midnight Epiphany",
-    content: "It's funny how clarity often finds us in the quiet hours when the world is asleep. Last night at 2 AM, I suddenly understood what I need to do about the situation that's been troubling me for months. Sometimes we need to stop overthinking and just listen to our intuition.",
-    date: "2023-09-16T02:45:00Z",
-    likes: 203,
-    comments: 42,
-    isPrivate: false,
-    tags: ["reflection", "decisions", "intuition"]
-  },
-  {
-    id: "104",
-    title: "A Letter to My Younger Self",
-    content: "If I could write to myself 10 years ago, I'd say: 'The path won't be what you expect, but that's the beauty of it. The detours will lead to people and places you can't imagine now. Trust the journey, even when it feels wrong.'",
-    date: "2023-09-15T17:20:00Z",
-    likes: 317,
-    comments: 58,
-    isPrivate: false,
-    tags: ["reflection", "growth", "advice"]
-  },
-  {
-    id: "105",
-    title: "The Unexpected Friendship",
-    content: "We met by chance, disagreed on nearly everything, and somehow became the closest of friends. It's remarkable how differences can either divide or enrich us, depending on our willingness to listen and understand.",
-    date: "2023-09-14T11:10:00Z",
-    likes: 189,
-    comments: 31,
-    isPrivate: false,
-    tags: ["friendship", "differences", "connection"]
-  },
-  {
-    id: "106",
-    title: "When Failure Becomes a Gift",
-    content: "The project I poured my heart into for a year has failed. Initially, I was devastated, but now I'm seeing how this apparent failure has opened doors I never would have approached otherwise. Sometimes our greatest setbacks are actually redirections.",
-    date: "2023-09-13T15:40:00Z",
-    likes: 276,
-    comments: 45,
-    isPrivate: false,
-    tags: ["failure", "resilience", "opportunity"]
-  }
-];
+type DiaryEntry = {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  is_private: boolean;
+  likes: number;
+  comments: number;
+  tags?: string[];
+};
 
-// Popular tags for filter section
+// Popular tags for filter section (we'll implement actual tags later)
 const popularTags = [
   "reflection", "growth", "vulnerability", "travel", 
   "friendship", "healing", "courage", "mindfulness"
@@ -82,6 +31,47 @@ const Explore = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"recent" | "popular" | "trending">("recent");
+  const [entries, setEntries] = useState<DiaryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    async function fetchPublicEntries() {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('diary_entries')
+          .select('*')
+          .eq('is_private', false)
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          throw error;
+        }
+        
+        // Transform the data
+        const transformedEntries = data.map(entry => ({
+          id: entry.id,
+          title: entry.title,
+          content: entry.content,
+          created_at: entry.created_at,
+          is_private: entry.is_private,
+          likes: entry.likes || 0,
+          comments: entry.comments || 0,
+          // Add dummy tags for now - we'll implement real tags later
+          tags: popularTags.slice(0, Math.floor(Math.random() * 3) + 1)
+        }));
+        
+        setEntries(transformedEntries);
+      } catch (error) {
+        console.error("Error fetching public entries:", error);
+        toast.error("Failed to load public entries");
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchPublicEntries();
+  }, []);
   
   const handleTagToggle = (tag: string) => {
     if (selectedTags.includes(tag)) {
@@ -92,14 +82,14 @@ const Explore = () => {
   };
   
   // Filter entries based on search and tags
-  const filteredEntries = mockEntries.filter(entry => {
+  const filteredEntries = entries.filter(entry => {
     const matchesSearch = 
       entry.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
       entry.content.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesTags = 
       selectedTags.length === 0 || 
-      selectedTags.some(tag => entry.tags.includes(tag));
+      (entry.tags && selectedTags.some(tag => entry.tags?.includes(tag)));
     
     return matchesSearch && matchesTags;
   });
@@ -108,13 +98,13 @@ const Explore = () => {
   const sortedEntries = [...filteredEntries].sort((a, b) => {
     switch (sortBy) {
       case "recent":
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       case "popular":
         return b.likes - a.likes;
       case "trending":
-        // For trending, we could use a combination of recency and popularity
-        const aScore = b.likes / ((Date.now() - new Date(a.date).getTime()) / 86400000);
-        const bScore = a.likes / ((Date.now() - new Date(b.date).getTime()) / 86400000);
+        // For trending, we use a combination of recency and popularity
+        const aScore = b.likes / ((Date.now() - new Date(a.created_at).getTime()) / 86400000);
+        const bScore = a.likes / ((Date.now() - new Date(b.created_at).getTime()) / 86400000);
         return bScore - aScore;
       default:
         return 0;
@@ -235,22 +225,24 @@ const Explore = () => {
                 </div>
               )}
               
-              <div className="grid md:grid-cols-2 gap-6">
-                {sortedEntries.map((entry) => (
-                  <DiaryCard
-                    key={entry.id}
-                    id={entry.id}
-                    title={entry.title}
-                    content={entry.content}
-                    date={entry.date}
-                    likes={entry.likes}
-                    comments={entry.comments}
-                    isPrivate={entry.isPrivate}
-                  />
-                ))}
-              </div>
-              
-              {sortedEntries.length === 0 && (
+              {loading ? (
+                <div className="text-center py-12">Loading entries...</div>
+              ) : sortedEntries.length > 0 ? (
+                <div className="grid md:grid-cols-2 gap-6">
+                  {sortedEntries.map((entry) => (
+                    <DiaryCard
+                      key={entry.id}
+                      id={entry.id}
+                      title={entry.title}
+                      content={entry.content}
+                      date={entry.created_at}
+                      likes={entry.likes}
+                      comments={entry.comments}
+                      isPrivate={entry.is_private}
+                    />
+                  ))}
+                </div>
+              ) : (
                 <div className="text-center py-12 glass-card">
                   <h3 className="text-xl font-medium mb-2">No entries found</h3>
                   <p className="text-gray-500">

@@ -7,27 +7,60 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Send, Image, Lock, EyeOff, Mic } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const DiaryForm = () => {
   const [isPrivate, setIsPrivate] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(true);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Form submission logic would go here
-    console.log({
-      title,
-      content,
-      isPrivate,
-      isAnonymous,
-    });
+    if (!user) {
+      toast.error("You must be logged in to create a diary entry");
+      return;
+    }
     
-    // Reset form after submission
-    setTitle("");
-    setContent("");
+    setIsSubmitting(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('diary_entries')
+        .insert([
+          { 
+            title,
+            content,
+            is_private: isPrivate,
+            is_anonymous: isAnonymous,
+            user_id: user.id
+          }
+        ])
+        .select();
+        
+      if (error) throw error;
+      
+      toast.success("Diary entry published successfully!");
+      setTitle("");
+      setContent("");
+      
+      // Redirect to dashboard to see the new entry
+      navigate("/dashboard");
+      
+    } catch (error) {
+      console.error("Error publishing diary entry:", error);
+      toast.error("Failed to publish diary entry. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   return (
@@ -126,9 +159,14 @@ const DiaryForm = () => {
       <Button 
         type="submit" 
         className="w-full sm:w-auto flex items-center gap-2"
+        disabled={isSubmitting}
       >
-        <Send className="h-4 w-4" />
-        <span>Post Entry</span>
+        {isSubmitting ? "Posting..." : (
+          <>
+            <Send className="h-4 w-4" />
+            <span>Post Entry</span>
+          </>
+        )}
       </Button>
     </form>
   );

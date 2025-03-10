@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
 import DiaryForm from "@/components/diary/DiaryForm";
@@ -8,56 +8,72 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PlusCircle, Search, Filter, BookOpen } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
-// Mock data for demonstration
-const mockDiaries = [
-  {
-    id: "1",
-    title: "Finding Peace in Chaos",
-    content: "Today I realized that even in the most chaotic moments, there's a certain peace to be found if we look deeply enough. I went for a long walk in the park and just sat by the lake for an hour, watching the ripples on the water.",
-    date: "2023-09-15T12:00:00Z",
-    likes: 24,
-    comments: 5,
-    isPrivate: false,
-  },
-  {
-    id: "2",
-    title: "Late Night Thoughts",
-    content: "It's 2 AM and I can't sleep. My mind is racing with ideas for the future. Sometimes I wonder if I'm on the right path, but then I remember that the journey itself is what matters most.",
-    date: "2023-09-10T02:15:00Z",
-    likes: 18,
-    comments: 3,
-    isPrivate: true,
-  },
-  {
-    id: "3",
-    title: "A Conversation with a Stranger",
-    content: "Had the most fascinating conversation with an elderly man at the coffee shop today. He shared stories from his youth, traveling across Europe in the 1960s. It made me realize how much wisdom surrounds us if we're open to listening.",
-    date: "2023-09-05T16:30:00Z",
-    likes: 32,
-    comments: 7,
-    isPrivate: false,
-  },
-  {
-    id: "4",
-    title: "New Beginnings",
-    content: "Today marks the start of something new. I've decided to pursue my passion project full-time. It's scary but exhilarating to finally take this leap of faith.",
-    date: "2023-09-01T09:45:00Z",
-    likes: 45,
-    comments: 12,
-    isPrivate: false,
-  },
-];
+type DiaryEntry = {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  is_private: boolean;
+  likes: number;
+  comments: number;
+};
 
 const Dashboard = () => {
   const [showNewEntry, setShowNewEntry] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  const { user } = useAuth();
+  
+  useEffect(() => {
+    async function fetchDiaryEntries() {
+      if (!user) return;
+      
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('diary_entries')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          throw error;
+        }
+        
+        // Transform the data to match our DiaryEntry type
+        const transformedEntries = data.map(entry => ({
+          id: entry.id,
+          title: entry.title,
+          content: entry.content,
+          created_at: entry.created_at,
+          is_private: entry.is_private,
+          likes: entry.likes || 0,
+          comments: entry.comments || 0
+        }));
+        
+        setDiaryEntries(transformedEntries);
+      } catch (error) {
+        console.error("Error fetching diary entries:", error);
+        toast.error("Failed to load diary entries");
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchDiaryEntries();
+  }, [user]);
   
   const toggleNewEntry = () => {
     setShowNewEntry(!showNewEntry);
   };
   
-  const filteredDiaries = mockDiaries.filter(diary => 
+  const filteredDiaries = diaryEntries.filter(diary => 
     diary.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
     diary.content.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -120,7 +136,9 @@ const Dashboard = () => {
             </div>
             
             <TabsContent value="all">
-              {filteredDiaries.length > 0 ? (
+              {loading ? (
+                <div className="text-center py-12">Loading entries...</div>
+              ) : filteredDiaries.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredDiaries.map((diary) => (
                     <DiaryCard
@@ -128,10 +146,10 @@ const Dashboard = () => {
                       id={diary.id}
                       title={diary.title}
                       content={diary.content}
-                      date={diary.date}
+                      date={diary.created_at}
                       likes={diary.likes}
                       comments={diary.comments}
-                      isPrivate={diary.isPrivate}
+                      isPrivate={diary.is_private}
                     />
                   ))}
                 </div>
@@ -154,41 +172,49 @@ const Dashboard = () => {
             </TabsContent>
             
             <TabsContent value="private">
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredDiaries
-                  .filter(diary => diary.isPrivate)
-                  .map((diary) => (
-                    <DiaryCard
-                      key={diary.id}
-                      id={diary.id}
-                      title={diary.title}
-                      content={diary.content}
-                      date={diary.date}
-                      likes={diary.likes}
-                      comments={diary.comments}
-                      isPrivate={diary.isPrivate}
-                    />
-                  ))}
-              </div>
+              {loading ? (
+                <div className="text-center py-12">Loading entries...</div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredDiaries
+                    .filter(diary => diary.is_private)
+                    .map((diary) => (
+                      <DiaryCard
+                        key={diary.id}
+                        id={diary.id}
+                        title={diary.title}
+                        content={diary.content}
+                        date={diary.created_at}
+                        likes={diary.likes}
+                        comments={diary.comments}
+                        isPrivate={diary.is_private}
+                      />
+                    ))}
+                </div>
+              )}
             </TabsContent>
             
             <TabsContent value="public">
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredDiaries
-                  .filter(diary => !diary.isPrivate)
-                  .map((diary) => (
-                    <DiaryCard
-                      key={diary.id}
-                      id={diary.id}
-                      title={diary.title}
-                      content={diary.content}
-                      date={diary.date}
-                      likes={diary.likes}
-                      comments={diary.comments}
-                      isPrivate={diary.isPrivate}
-                    />
-                  ))}
-              </div>
+              {loading ? (
+                <div className="text-center py-12">Loading entries...</div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredDiaries
+                    .filter(diary => !diary.is_private)
+                    .map((diary) => (
+                      <DiaryCard
+                        key={diary.id}
+                        id={diary.id}
+                        title={diary.title}
+                        content={diary.content}
+                        date={diary.created_at}
+                        likes={diary.likes}
+                        comments={diary.comments}
+                        isPrivate={diary.is_private}
+                      />
+                    ))}
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
