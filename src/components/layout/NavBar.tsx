@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -106,12 +105,10 @@ const NavBar = () => {
         <nav className="hidden md:flex items-center gap-6">
           <motion.div className="flex items-center gap-6">
             {[
-              { path: "/", label: "Home", index: 0 },
               ...(user ? [
-                { path: "/dashboard", label: "My Diary", index: 1 },
-                { path: "/explore", label: "Explore", index: 2 }
-              ] : []),
-              { path: "#", label: "About", index: user ? 3 : 1 }
+                { path: "/dashboard", label: "My Diary", index: 0 },
+                { path: "/explore", label: "Explore", index: 1 }
+              ] : [])
             ].map((item) => (
               <motion.div
                 key={item.path}

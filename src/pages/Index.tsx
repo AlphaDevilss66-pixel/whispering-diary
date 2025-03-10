@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import NavBar from "@/components/layout/NavBar";
@@ -187,23 +186,8 @@ const Index = () => {
               </CustomButton>
             </motion.div>
             
-            <motion.div 
-              className="mt-10 mx-auto max-w-3xl"
-              variants={itemVariants}
-            >
-              <motion.div 
-                className="relative aspect-[16/9] rounded-3xl overflow-hidden border border-ios-gray-5/50 shadow-2xl shadow-ios-gray-1/10"
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300, damping: 15 }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-tr from-black/5 to-black/0"></div>
-                <img 
-                  src="https://placehold.co/1200x675/F9FAFB/e2e8f0?text=Whispering+Diary+Screenshot" 
-                  alt="Whispering Diary App Interface" 
-                  className="w-full h-full object-cover"
-                />
-              </motion.div>
-            </motion.div>
+            
+            
           </motion.div>
           
           <motion.div 
@@ -407,92 +391,826 @@ const Index = () => {
         </div>
       </motion.section>
 
-      {/* Testimonials Section */}
-      <motion.section 
-        ref={testimonialsRef}
-        className="py-16 bg-white"
-        initial={{ opacity: 0 }}
-        animate={isTestimonialsInView ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <div className="page-container">
-          <motion.div 
-            className="text-center mb-10"
-            variants={containerVariants}
-            initial="hidden"
-            animate={isTestimonialsInView ? "visible" : "hidden"}
-          >
-            <motion.div 
-              variants={itemVariants}
-              className="inline-flex items-center px-3 py-1 rounded-full bg-ios-yellow/10 text-sm text-ios-yellow font-medium mb-4"
-            >
-              Recensioni
-            </motion.div>
-            
-            <motion.h2 
-              variants={itemVariants}
-              className="text-3xl md:text-4xl font-medium mb-4 tracking-tight"
-            >
-              Cosa Dicono Gli Utenti
-            </motion.h2>
-            
-            <motion.p 
-              variants={itemVariants}
-              className="text-gray-600 max-w-2xl mx-auto"
-            >
-              Scopri come Whispering Diary sta aiutando le persone a trovare la loro voce in uno spazio sicuro.
-            </motion.p>
-          </motion.div>
-          
-          <motion.div 
-            className="grid md:grid-cols-3 gap-6"
-            variants={containerVariants}
-            initial="hidden"
-            animate={isTestimonialsInView ? "visible" : "hidden"}
-            custom={1}
-          >
-            {testimonials.map((testimonial, index) => (
-              <motion.div 
-                key={testimonial.name}
-                custom={index}
-                variants={cardVariants}
-                whileHover={{ 
-                  scale: 1.03,
-                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
-                }}
-                className="ios-card p-6 transition-all duration-300"
-              >
-                <div className="flex items-start mb-4">
-                  <motion.div 
-                    className={`w-12 h-12 rounded-full flex items-center justify-center font-medium text-lg ${testimonial.color} mr-4`}
-                    whileHover={{ scale: 1.1 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 10 }}
-                  >
-                    {testimonial.avatar}
-                  </motion.div>
-                  <div>
-                    <h4 className="font-medium">{testimonial.name}</h4>
-                    <p className="text-gray-500 text-sm">{testimonial.role}</p>
-                  </div>
-                </div>
-                <div className="flex mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.3 + i * 0.1 }}
-                    >
-                      <Star className="h-5 w-5 text-ios-yellow fill-ios-yellow" />
-                    </motion.div>
-                  ))}
-                </div>
-                <p className="text-gray-600 italic">{testimonial.text}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </motion.section>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
       
       {/* CTA Section */}
       <motion.section 
