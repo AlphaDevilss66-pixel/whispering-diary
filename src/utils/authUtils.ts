@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -68,38 +67,24 @@ export const signOut = async (
   navigate: (path: string) => void
 ) => {
   try {
-    // First, clear the local state and storage
+    // First navigate to prevent any race conditions
+    window.location.href = "/";
+
+    // Then clear the local state
     setSession(null);
     setUser(null);
     localStorage.removeItem('supabase.auth.token');
 
-    // Then try to sign out from Supabase
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error("API signout error:", error);
-        if (error.message !== "Session not found") {
-          throw error;
-        }
-      }
-    } catch (signOutError) {
-      console.error("Error during API signout:", signOutError);
+    // Finally sign out from Supabase
+    const { error } = await supabase.auth.signOut();
+    if (error && error.message !== "Session not found") {
+      console.error("API signout error:", error);
+      throw error;
     }
-    
-    // Always show success message and navigate, even if API call fails
+
     toast.success("Successfully signed out");
-    
-    // Force navigation to root with a slight delay to ensure state is cleared
-    setTimeout(() => {
-      navigate("/");
-      window.location.href = "/";
-    }, 100);
   } catch (error: any) {
     console.error("Error during sign out process:", error);
     toast.error("Error during sign out");
-    
-    // Still try to navigate on error
-    navigate("/");
-    window.location.href = "/";
   }
 };
