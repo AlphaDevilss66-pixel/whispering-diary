@@ -23,7 +23,7 @@ const Explore = () => {
     handleDeleteEntry,
     sortByLikes,
     filterLastWeek
-  } = useDiaryEntries(selectedTag);
+  } = useDiaryEntries({ selectedTag });
 
   const handleTagSelect = (tag: string | null) => {
     setSelectedTag(tag);

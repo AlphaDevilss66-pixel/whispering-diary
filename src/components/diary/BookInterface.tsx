@@ -22,7 +22,7 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
   const [showForm, setShowForm] = useState(false);
   
   // Create springs for each page
-  const [props, api] = useSprings(entries.length, i => ({
+  const [props, api] = useSprings(entries.length || 1, i => ({
     x: i < index ? -100 : i > index ? 100 : 0,
     scale: i === index ? 1 : 0.8,
     display: i < index - 1 || i > index + 1 ? 'none' : 'block',
@@ -204,26 +204,28 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
       {entries.length > 0 ? (
         <div className="w-full h-full overflow-hidden">
           {props.map(({ x, scale, display, opacity, rotateY }, i) => (
-            <animated.div
-              key={entries[i].id}
-              className="book-page absolute top-0 left-0 w-full h-full"
-              {...bind()}
-              style={{
-                display,
-                opacity,
-                transform: x.to(x => `translate3d(${x}%,0,0)`).to(
-                  (x) => `translate3d(${x}%,0,0) scale(${scale}) rotateY(${rotateY}deg)`
-                ),
-              }}
-            >
-              <div className="book-page-content overflow-auto h-full">
-                <div className="book-page-date">{formatDate(entries[i].created_at)}</div>
-                <h2 className="book-page-title">{entries[i].title}</h2>
-                <div className="book-page-body whitespace-pre-wrap">
-                  {entries[i].content}
+            entries[i] && (
+              <animated.div
+                key={entries[i].id}
+                className="book-page absolute top-0 left-0 w-full h-full"
+                {...bind()}
+                style={{
+                  display,
+                  opacity,
+                  transform: x.to(x => `translate3d(${x}%,0,0)`).to(
+                    (x) => `translate3d(${x}%,0,0) scale(${scale}) rotateY(${rotateY}deg)`
+                  ),
+                }}
+              >
+                <div className="book-page-content overflow-auto h-full">
+                  <div className="book-page-date">{formatDate(entries[i].created_at)}</div>
+                  <h2 className="book-page-title">{entries[i].title}</h2>
+                  <div className="book-page-body whitespace-pre-wrap">
+                    {entries[i].content}
+                  </div>
                 </div>
-              </div>
-            </animated.div>
+              </animated.div>
+            )
           ))}
         </div>
       ) : (
