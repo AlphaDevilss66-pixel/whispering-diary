@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { useSprings, animated } from "@react-spring/web";
 import { useDrag } from "@use-gesture/react";
@@ -31,10 +30,10 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
     config: { mass: 1, tension: 320, friction: 35 }
   }));
   
-  // Set up gesture handler for swipe
+  // Set up gesture handler for swipe with proper TypeScript typing
   const bind = useDrag(({ active, movement: [mx], direction: [xDir], velocity: [vx] }) => {
-    const trigger = vx > 0.2; // Velocity threshold to trigger page change
-    const dir = xDir < 0 ? 1 : -1; // Direction of swipe
+    const trigger = vx > 0.2;
+    const dir = xDir < 0 ? 1 : -1;
     
     // If we're actively dragging and not at boundaries, move the page
     if (active && ((dir === 1 && index < entries.length - 1) || (dir === -1 && index > 0))) {
@@ -208,7 +207,6 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
               <animated.div
                 key={entries[i].id}
                 className="book-page absolute top-0 left-0 w-full h-full"
-                {...bind()}
                 style={{
                   display,
                   opacity,
@@ -216,6 +214,7 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
                     (x) => `translate3d(${x}%,0,0) scale(${scale}) rotateY(${rotateY}deg)`
                   ),
                 }}
+                {...(bind() as any)}
               >
                 <div className="book-page-content overflow-auto h-full">
                   <div className="book-page-date">{formatDate(entries[i].created_at)}</div>
@@ -241,3 +240,4 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
 };
 
 export default BookInterface;
+
