@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { useSprings, animated } from "@react-spring/web";
 import { useDrag } from "@use-gesture/react";
@@ -152,6 +153,9 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
     }
   }, [entries]);
   
+  // Get the binding object to properly type it for React
+  const bindProps = bind();
+  
   return (
     <div className="book-container h-full w-full">
       {/* Navigation buttons */}
@@ -214,7 +218,7 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
                     (x) => `translate3d(${x}%,0,0) scale(${scale}) rotateY(${rotateY}deg)`
                   ),
                 }}
-                {...(bind() as any)}
+                {...bindProps}
               >
                 <div className="book-page-content overflow-auto h-full">
                   <div className="book-page-date">{formatDate(entries[i].created_at)}</div>
@@ -240,4 +244,3 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
 };
 
 export default BookInterface;
-
