@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
 
 // Pages
 import Index from "./pages/Index";
@@ -15,6 +16,9 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import DiaryDetail from "./pages/DiaryDetail";
 import NotFound from "./pages/NotFound";
+
+// Apply iOS style to the entire app
+import "./ios-styles.css";
 
 // Auth guard component that redirects authenticated users away from public routes
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
@@ -44,7 +48,7 @@ const App = () => {
         <AuthProvider>
           <TooltipProvider>
             <Toaster />
-            <Sonner />
+            <Sonner className="ios-toast" />
             <AppRoutes />
           </TooltipProvider>
         </AuthProvider>

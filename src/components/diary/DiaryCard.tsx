@@ -51,7 +51,7 @@ const DiaryCard = ({
 
   const handleShare = async (platform: string) => {
     const url = `${window.location.origin}/diary/${id}`;
-    const title = `Check out this diary entry: ${title}`;
+    const shareTitle = `Check out this diary entry: ${title}`;
     
     // Different share methods based on platform
     switch (platform) {
@@ -65,19 +65,19 @@ const DiaryCard = ({
         }
         break;
       case 'twitter':
-        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`, '_blank');
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareTitle)}&url=${encodeURIComponent(url)}`, '_blank');
         break;
       case 'facebook':
         window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
         break;
       case 'whatsapp':
-        window.open(`https://wa.me/?text=${encodeURIComponent(title + ' ' + url)}`, '_blank');
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareTitle + ' ' + url)}`, '_blank');
         break;
       default:
         if (navigator.share) {
           try {
             await navigator.share({
-              title: title,
+              title: shareTitle,
               url: url
             });
           } catch (err) {
@@ -165,7 +165,7 @@ const DiaryCard = ({
               <Share2 className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="ios-card p-1 min-w-[180px]" align="end">
+          <DropdownMenuContent className="ios-card p-1 min-w-[180px] rounded-xl" align="end">
             <DropdownMenuItem onClick={() => handleShare('clipboard')} className="cursor-pointer rounded-lg focus:bg-secondary">
               Copy Link
             </DropdownMenuItem>

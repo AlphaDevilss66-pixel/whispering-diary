@@ -44,6 +44,7 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
     
     try {
       setIsLoading(true);
+      // Fix: Use the correct table name and query structure
       const { data, error } = await supabase
         .from("diary_comments")
         .select(`
@@ -52,14 +53,21 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
           created_at,
           user_id,
           diary_entry_id,
-          user:profiles(username, avatar_url, full_name)
+          profiles:user_id(username, avatar_url, full_name)
         `)
         .eq("diary_entry_id", diaryEntryId)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setComments(data as Comment[]);
-      updateCommentCount(data.length);
+      
+      // Transform data to match our Comment type
+      const formattedComments = data.map(comment => ({
+        ...comment,
+        user: comment.profiles
+      })) as Comment[];
+      
+      setComments(formattedComments);
+      updateCommentCount(formattedComments.length);
     } catch (error) {
       console.error("Error fetching comments:", error);
       toast.error("Failed to load comments");
@@ -74,7 +82,7 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
     try {
       setIsSubmitting(true);
       
-      // Insert new comment
+      // Insert new comment using the correct table and schema
       const { data, error } = await supabase
         .from("diary_comments")
         .insert({
@@ -82,13 +90,7 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
           user_id: user.id,
           diary_entry_id: diaryEntryId
         })
-        .select(`
-          id,
-          content,
-          created_at,
-          user_id,
-          diary_entry_id
-        `);
+        .select();
 
       if (error) throw error;
       
@@ -150,7 +152,7 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
               placeholder="Add a comment..."
               value={newComment}
               onChange={e => setNewComment(e.target.value)}
-              className="ios-input min-h-[100px]"
+              className="ios-input min-h-[100px] rounded-xl bg-gray-50 border-gray-200"
             />
             <div className="flex justify-end">
               <Button 

@@ -1,272 +1,357 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import NavBar from "@/components/layout/NavBar";
-import Footer from "@/components/layout/Footer";
-import { useAuth } from "@/contexts/AuthContext";
-import { useProfile } from "@/hooks/useProfile";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { 
+  User, 
+  Key, 
   Bell, 
-  Globe, 
-  Lock, 
   Shield, 
-  Eye, 
-  Smartphone, 
-  FileText, 
-  Mail,
-  User
+  LogOut, 
+  Camera,
+  Moon,
+  Trash2
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { supabase } from "@/integrations/supabase/client";
+import NavBar from "@/components/layout/NavBar";
+import Footer from "@/components/layout/Footer";
 
 const Settings = () => {
-  const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { profile, updateProfile } = useProfile();
+  const { profile, refetchProfile } = useProfile();
+  const navigate = useNavigate();
   
+  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
+  const [bio, setBio] = useState("");
+  const [email, setEmail] = useState("");
+  const [darkMode, setDarkMode] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [formData, setFormData] = useState({
-    username: profile?.username || "",
-    fullName: profile?.full_name || "",
-    bio: profile?.bio || "",
-    email: user?.email || "",
-    notifications: true,
-    darkMode: false,
-    publicProfile: true
-  });
   
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name || "");
+      setUsername(profile.username || "");
+      setBio(profile.bio || "");
+    }
+    
+    if (user) {
+      setEmail(user.email || "");
+    }
+  }, [profile, user]);
   
-  const handleToggleChange = (name: string, checked: boolean) => {
-    setFormData({
-      ...formData,
-      [name]: checked
-    });
-  };
-  
-  const handleProfileUpdate = async () => {
+  const handleUpdateProfile = async () => {
     if (!user) return;
     
-    setIsUpdating(true);
     try {
-      await updateProfile({
-        username: formData.username,
-        full_name: formData.fullName,
-        bio: formData.bio
-      });
+      setIsUpdating(true);
       
-      toast.success("Settings updated successfully");
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          full_name: fullName,
+          username,
+          bio
+        })
+        .eq("id", user.id);
+        
+      if (error) throw error;
+      
+      await refetchProfile();
+      toast.success("Profile updated successfully");
     } catch (error) {
-      console.error("Error updating settings:", error);
-      toast.error("Failed to update settings");
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
     } finally {
       setIsUpdating(false);
     }
   };
   
-  const handleDeleteAccount = () => {
-    // Show confirmation dialog before deleting
-    if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-      toast.error("This feature is not yet implemented", {
-        description: "Account deletion will be available in a future update."
-      });
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Failed to sign out");
     }
   };
   
+  const getInitials = (name: string) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map(n => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+  
   return (
-    <div className="min-h-screen flex flex-col bg-[#F6F6F7]">
+    <div className="min-h-screen flex flex-col">
       <NavBar />
       
       <main className="flex-1 pt-24 pb-16">
-        <div className="page-container">
-          <div className="mb-8">
-            <h1 className="text-3xl font-medium">Settings</h1>
-            <p className="text-gray-600">Manage your account preferences</p>
+        <div className="page-container max-w-5xl">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+              <h1 className="text-3xl font-serif font-semibold">Settings</h1>
+              <p className="text-gray-600">Manage your account preferences and profile</p>
+            </div>
           </div>
           
-          <div className="grid md:grid-cols-[240px_1fr] gap-8">
-            {/* Settings Navigation */}
-            <div className="ios-card p-4 h-fit">
-              <nav className="space-y-1">
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start rounded-xl text-primary"
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  Account
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start rounded-xl text-gray-600"
-                >
-                  <Bell className="mr-2 h-4 w-4" />
-                  Notifications
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start rounded-xl text-gray-600"
-                >
-                  <Globe className="mr-2 h-4 w-4" />
-                  Privacy
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start rounded-xl text-gray-600"
-                >
-                  <Lock className="mr-2 h-4 w-4" />
-                  Security
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start rounded-xl text-gray-600"
-                >
-                  <Smartphone className="mr-2 h-4 w-4" />
-                  Appearance
-                </Button>
-              </nav>
-            </div>
+          <Tabs defaultValue="profile" className="w-full ios-tabs">
+            <TabsList className="grid grid-cols-4 mb-8 ios-tabs-list rounded-xl">
+              <TabsTrigger value="profile" className="ios-tab">
+                <User className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Profile</span>
+              </TabsTrigger>
+              <TabsTrigger value="account" className="ios-tab">
+                <Key className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Account</span>
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="ios-tab">
+                <Bell className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Notifications</span>
+              </TabsTrigger>
+              <TabsTrigger value="privacy" className="ios-tab">
+                <Shield className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Privacy</span>
+              </TabsTrigger>
+            </TabsList>
             
-            {/* Settings Content */}
-            <div className="space-y-6">
-              {/* Profile Section */}
-              <div className="ios-card p-6">
-                <h2 className="text-xl font-medium mb-4">Profile Information</h2>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <TabsContent value="profile">
+              <Card className="ios-card">
+                <CardHeader>
+                  <CardTitle>Profile Information</CardTitle>
+                  <CardDescription>Update your profile details and public information</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex flex-col sm:flex-row items-center gap-6">
+                    <div className="relative">
+                      <Avatar className="h-24 w-24">
+                        <AvatarImage src={profile?.avatar_url || ""} />
+                        <AvatarFallback className="text-lg bg-primary/10 text-primary">
+                          {getInitials(profile?.full_name || "")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <Button 
+                        size="icon" 
+                        variant="secondary" 
+                        className="absolute bottom-0 right-0 h-8 w-8 rounded-full shadow-md"
+                      >
+                        <Camera className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="space-y-1 text-center sm:text-left">
+                      <h3 className="font-medium text-lg">{profile?.full_name || "Your Name"}</h3>
+                      <p className="text-gray-500">@{profile?.username || "username"}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="fullName">Full Name</Label>
+                        <Input 
+                          id="fullName" 
+                          value={fullName} 
+                          onChange={(e) => setFullName(e.target.value)}
+                          className="ios-input rounded-xl"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="username">Username</Label>
+                        <Input 
+                          id="username" 
+                          value={username} 
+                          onChange={(e) => setUsername(e.target.value)}
+                          className="ios-input rounded-xl"
+                        />
+                      </div>
+                    </div>
+                    
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Username</label>
-                      <Input 
-                        name="username"
-                        value={formData.username}
-                        onChange={handleChange}
-                        className="ios-input"
-                        placeholder="Your username"
+                      <Label htmlFor="bio">Bio</Label>
+                      <Textarea 
+                        id="bio" 
+                        value={bio} 
+                        onChange={(e) => setBio(e.target.value)}
+                        placeholder="Tell us about yourself"
+                        className="ios-input rounded-xl"
+                        rows={4}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Full Name</label>
-                      <Input 
-                        name="fullName"
-                        value={formData.fullName}
-                        onChange={handleChange}
-                        className="ios-input"
-                        placeholder="Your full name"
-                      />
-                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Bio</label>
-                    <Textarea 
-                      name="bio"
-                      value={formData.bio}
-                      onChange={handleChange}
-                      className="ios-input"
-                      placeholder="Tell us about yourself"
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              {/* Email Section */}
-              <div className="ios-card p-6">
-                <h2 className="text-xl font-medium mb-4">Email Address</h2>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Email</label>
-                    <Input 
-                      name="email"
-                      value={formData.email}
-                      readOnly
-                      className="ios-input bg-gray-100"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      To change your email, please contact support
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Preferences Section */}
-              <div className="ios-card p-6">
-                <h2 className="text-xl font-medium mb-4">Preferences</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Email Notifications</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Receive updates about your account activity
-                      </p>
-                    </div>
-                    <Switch 
-                      checked={formData.notifications} 
-                      onCheckedChange={(checked) => handleToggleChange("notifications", checked)}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Dark Mode</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Switch between light and dark theme
-                      </p>
-                    </div>
-                    <Switch 
-                      checked={formData.darkMode} 
-                      onCheckedChange={(checked) => handleToggleChange("darkMode", checked)}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Public Profile</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Allow others to view your profile
-                      </p>
-                    </div>
-                    <Switch 
-                      checked={formData.publicProfile} 
-                      onCheckedChange={(checked) => handleToggleChange("publicProfile", checked)}
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              {/* Actions */}
-              <div className="flex flex-col sm:flex-row justify-between gap-4">
-                <Button
-                  variant="destructive"
-                  className="rounded-xl"
-                  onClick={handleDeleteAccount}
-                >
-                  Delete Account
-                </Button>
-                <div className="flex gap-4">
-                  <Button 
-                    variant="outline" 
-                    className="flex-1 rounded-xl"
-                    onClick={() => navigate("/profile")}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    className="flex-1 rounded-xl"
-                    onClick={handleProfileUpdate}
+                </CardContent>
+                <CardFooter className="flex justify-end gap-2">
+                  <Button
+                    onClick={handleUpdateProfile}
                     disabled={isUpdating}
+                    className="rounded-xl"
                   >
                     {isUpdating ? "Saving..." : "Save Changes"}
                   </Button>
-                </div>
-              </div>
-            </div>
-          </div>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="account">
+              <Card className="ios-card">
+                <CardHeader>
+                  <CardTitle>Account Settings</CardTitle>
+                  <CardDescription>Manage your account credentials and preferences</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input 
+                      id="email" 
+                      value={email} 
+                      disabled
+                      className="ios-input rounded-xl bg-gray-50"
+                    />
+                    <p className="text-xs text-gray-500">To change your email, please contact support</p>
+                  </div>
+                  
+                  <div className="space-y-4 pt-4 border-t">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <h4 className="font-medium">Dark Mode</h4>
+                        <p className="text-sm text-gray-500">Toggle dark theme across the app</p>
+                      </div>
+                      <Switch
+                        checked={darkMode}
+                        onCheckedChange={setDarkMode}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 border-t">
+                    <Button 
+                      variant="destructive" 
+                      className="w-full rounded-xl"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="notifications">
+              <Card className="ios-card">
+                <CardHeader>
+                  <CardTitle>Notification Preferences</CardTitle>
+                  <CardDescription>Customize how and when you receive notifications</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <h4 className="font-medium">Email Notifications</h4>
+                        <p className="text-sm text-gray-500">Receive updates about comments and likes</p>
+                      </div>
+                      <Switch
+                        checked={notificationsEnabled}
+                        onCheckedChange={setNotificationsEnabled}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <h4 className="font-medium">Push Notifications</h4>
+                        <p className="text-sm text-gray-500">Get real-time alerts on your device</p>
+                      </div>
+                      <Switch
+                        checked={notificationsEnabled}
+                        onCheckedChange={setNotificationsEnabled}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <h4 className="font-medium">Marketing Emails</h4>
+                        <p className="text-sm text-gray-500">Stay updated with new features and offers</p>
+                      </div>
+                      <Switch
+                        checked={false}
+                        onCheckedChange={() => {}}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="privacy">
+              <Card className="ios-card">
+                <CardHeader>
+                  <CardTitle>Privacy & Security</CardTitle>
+                  <CardDescription>Manage your privacy settings and account security</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <h4 className="font-medium">Make Profile Private</h4>
+                        <p className="text-sm text-gray-500">Only approved followers can see your entries</p>
+                      </div>
+                      <Switch
+                        checked={false}
+                        onCheckedChange={() => {}}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <h4 className="font-medium">Two-Factor Authentication</h4>
+                        <p className="text-sm text-gray-500">Add an additional layer of security</p>
+                      </div>
+                      <Button variant="outline" size="sm" className="rounded-xl">
+                        Setup
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 border-t">
+                    <Button 
+                      variant="outline" 
+                      className="w-full text-red-500 hover:text-red-600 border-red-200 hover:border-red-300 hover:bg-red-50 rounded-xl"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Account
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
       

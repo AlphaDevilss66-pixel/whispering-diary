@@ -1,26 +1,16 @@
 
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
+import { ArrowLeft, Heart, Calendar, Lock, Globe, Share2 } from "lucide-react";
+import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import CommentSection from "@/components/diary/CommentSection";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
-import CommentSection from "@/components/diary/CommentSection";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  Heart, 
-  MessageSquare, 
-  Share2, 
-  ArrowLeft, 
-  Calendar, 
-  Lock, 
-  Globe,
-  MoreHorizontal
-} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProfile } from "@/hooks/useProfile";
-import { format } from "date-fns";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -34,13 +24,11 @@ type DiaryEntry = {
   title: string;
   content: string;
   created_at: string;
-  updated_at: string;
   is_private: boolean;
-  is_anonymous: boolean;
   likes: number;
   comments: number;
   user_id: string;
-  author?: {
+  author: {
     username: string;
     avatar_url: string;
     full_name: string;
@@ -49,78 +37,84 @@ type DiaryEntry = {
 
 const DiaryDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { profile } = useProfile();
-  
-  const [entry, setEntry] = useState<DiaryEntry | null>(null);
+  const [diaryEntry, setDiaryEntry] = useState<DiaryEntry | null>(null);
   const [loading, setLoading] = useState(true);
+  const [commentCount, setCommentCount] = useState(0);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
-  const [commentCount, setCommentCount] = useState(0);
-  
+  const { user } = useAuth();
+
   useEffect(() => {
-    if (!id) return;
-    
-    const fetchDiaryEntry = async () => {
+    async function fetchDiaryEntry() {
+      if (!id) return;
+      
       try {
         setLoading(true);
+        
         const { data, error } = await supabase
           .from('diary_entries')
           .select(`
-            *,
-            author:profiles(username, avatar_url, full_name)
+            id, title, content, created_at, is_private, 
+            likes, comments, user_id,
+            profiles:user_id(username, avatar_url, full_name)
           `)
           .eq('id', id)
           .single();
           
         if (error) throw error;
         
-        setEntry(data as DiaryEntry);
+        // Transform data to match our DiaryEntry type
+        const transformedData = {
+          ...data,
+          author: data.profiles
+        } as unknown as DiaryEntry;
+        
+        setDiaryEntry(transformedData);
         setLikeCount(data.likes);
-        setCommentCount(data.comments);
       } catch (error) {
         console.error("Error fetching diary entry:", error);
         toast.error("Failed to load diary entry");
-        navigate("/explore");
       } finally {
         setLoading(false);
       }
-    };
+    }
     
     fetchDiaryEntry();
-  }, [id, navigate]);
+  }, [id]);
   
   const handleLike = async () => {
-    if (!user || !entry) return;
+    if (!diaryEntry) return;
     
-    // Update optimistically
     const newLikeCount = liked ? likeCount - 1 : likeCount + 1;
+    
     setLiked(!liked);
     setLikeCount(newLikeCount);
     
     try {
-      // Update in database
       const { error } = await supabase
         .from('diary_entries')
         .update({ likes: newLikeCount })
-        .eq('id', entry.id);
+        .eq('id', diaryEntry.id);
         
       if (error) throw error;
     } catch (error) {
-      // Revert on error
       console.error("Error updating likes:", error);
+      // Revert UI state if update fails
       setLiked(liked);
       setLikeCount(likeCount);
       toast.error("Failed to update likes");
     }
   };
   
+  const updateCommentCount = (count: number) => {
+    setCommentCount(count);
+  };
+
   const handleShare = async (platform: string) => {
-    if (!entry) return;
+    if (!diaryEntry) return;
     
-    const url = `${window.location.origin}/diary/${entry.id}`;
-    const title = `Check out this diary entry: ${entry.title}`;
+    const url = window.location.href;
+    const title = `Check out this diary entry: ${diaryEntry.title}`;
     
     // Different share methods based on platform
     switch (platform) {
@@ -158,10 +152,6 @@ const DiaryDetail = () => {
     }
   };
   
-  const updateCommentCount = (count: number) => {
-    setCommentCount(count);
-  };
-  
   const getInitials = (name: string) => {
     if (!name) return "U";
     return name
@@ -177,147 +167,115 @@ const DiaryDetail = () => {
       <NavBar />
       
       <main className="flex-1 pt-24 pb-16">
-        <div className="page-container">
-          {loading ? (
-            <div className="text-center py-20">Loading diary entry...</div>
-          ) : !entry ? (
-            <div className="text-center py-20">
-              <h2 className="text-2xl font-medium mb-4">Entry not found</h2>
-              <Button onClick={() => navigate(-1)} className="rounded-xl">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
-              </Button>
-            </div>
-          ) : (
-            <div>
-              {/* Back button */}
-              <div className="mb-6">
-                <Button 
-                  variant="ghost" 
-                  onClick={() => navigate(-1)}
-                  className="text-muted-foreground p-0 hover:text-foreground"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" /> 
-                  Back
+        <div className="page-container max-w-4xl">
+          <div className="mb-8">
+            <Button variant="ghost" asChild className="mb-6 -ml-2 rounded-xl">
+              <Link to="/dashboard" className="flex items-center">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Link>
+            </Button>
+            
+            {loading ? (
+              <div className="ios-card p-8 animate-pulse">
+                <div className="h-8 w-3/4 bg-gray-200 rounded mb-4"></div>
+                <div className="h-4 w-1/4 bg-gray-200 rounded mb-8"></div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded"></div>
+                  <div className="h-4 bg-gray-200 rounded"></div>
+                  <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            ) : diaryEntry ? (
+              <div className="ios-card p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-3">
+                    <Avatar>
+                      <AvatarImage src={diaryEntry.author?.avatar_url || ""} />
+                      <AvatarFallback>{getInitials(diaryEntry.author?.full_name || "")}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">{diaryEntry.author?.username || "Anonymous"}</div>
+                      <div className="text-sm text-gray-500 flex items-center">
+                        <Calendar className="h-3.5 w-3.5 mr-1 inline" />
+                        {format(new Date(diaryEntry.created_at), "MMMM d, yyyy")}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="flex items-center gap-1 text-xs">
+                      {diaryEntry.is_private ? (
+                        <>
+                          <Lock className="h-3 w-3" />
+                          Private
+                        </>
+                      ) : (
+                        <>
+                          <Globe className="h-3 w-3" />
+                          Public
+                        </>
+                      )}
+                    </Badge>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full">
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="ios-card p-1 min-w-[180px] rounded-xl" align="end">
+                        <DropdownMenuItem onClick={() => handleShare('clipboard')} className="cursor-pointer rounded-lg focus:bg-secondary">
+                          Copy Link
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleShare('twitter')} className="cursor-pointer rounded-lg focus:bg-secondary">
+                          Share on Twitter
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleShare('facebook')} className="cursor-pointer rounded-lg focus:bg-secondary">
+                          Share on Facebook
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleShare('whatsapp')} className="cursor-pointer rounded-lg focus:bg-secondary">
+                          Share on WhatsApp
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+                
+                <h1 className="text-3xl font-serif font-semibold mb-4">{diaryEntry.title}</h1>
+                
+                <div className="text-gray-700 prose max-w-none mb-8 whitespace-pre-wrap">
+                  {diaryEntry.content}
+                </div>
+                
+                <div className="border-t pt-6 flex justify-between items-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLike}
+                    className={`flex items-center gap-1.5 ${liked ? "text-red-500" : ""}`}
+                  >
+                    <Heart className={`h-5 w-5 ${liked ? "fill-current" : ""}`} />
+                    <span>{likeCount} {likeCount === 1 ? "Like" : "Likes"}</span>
+                  </Button>
+                  
+                  <div className="text-sm text-gray-500">
+                    {commentCount} {commentCount === 1 ? "Comment" : "Comments"}
+                  </div>
+                </div>
+                
+                <CommentSection diaryEntryId={diaryEntry.id} updateCommentCount={updateCommentCount} />
+              </div>
+            ) : (
+              <div className="ios-card p-8 text-center">
+                <h2 className="text-xl font-medium mb-2">Diary entry not found</h2>
+                <p className="text-gray-500 mb-4">The diary entry you're looking for doesn't exist or you don't have permission to view it.</p>
+                <Button asChild>
+                  <Link to="/dashboard">Return to Dashboard</Link>
                 </Button>
               </div>
-              
-              <article className="max-w-4xl mx-auto">
-                {/* Header */}
-                <div className="mb-8">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                      <Badge variant="outline" className="w-fit flex items-center gap-1">
-                        <Calendar className="h-3 w-3" /> 
-                        {format(new Date(entry.created_at), "MMMM d, yyyy")}
-                      </Badge>
-                      {entry.is_private ? (
-                        <Badge variant="outline" className="w-fit flex items-center gap-1">
-                          <Lock className="h-3 w-3" /> 
-                          Private Entry
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="w-fit flex items-center gap-1">
-                          <Globe className="h-3 w-3" /> 
-                          Public Entry
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    {user && user.id === entry.user_id && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/edit-diary/${entry.id}`)}>
-                            Edit Entry
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
-                            Delete Entry
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-                  
-                  <h1 className="text-3xl font-serif font-medium mb-4">{entry.title}</h1>
-                  
-                  {!entry.is_anonymous && entry.author && (
-                    <div className="flex items-center gap-2 mb-6">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={entry.author.avatar_url || ""} />
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {getInitials(entry.author.full_name || "")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm font-medium">{entry.author.username || "Anonymous"}</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Content */}
-                <div className="prose max-w-none mb-8">
-                  {entry.content.split('\n').map((paragraph, idx) => (
-                    <p key={idx} className="mb-4 text-gray-800 leading-relaxed">{paragraph}</p>
-                  ))}
-                </div>
-                
-                {/* Actions */}
-                <div className="flex items-center justify-between py-4 border-t border-b mb-8">
-                  <div className="flex items-center space-x-6">
-                    <Button 
-                      variant="ghost" 
-                      className={`flex items-center gap-2 ${liked ? 'text-red-500' : ''}`}
-                      onClick={handleLike}
-                    >
-                      <Heart className={`h-5 w-5 ${liked ? 'fill-red-500' : ''}`} />
-                      <span>{likeCount}</span>
-                    </Button>
-                    
-                    <Button 
-                      variant="ghost"
-                      className="flex items-center gap-2"
-                      onClick={() => document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth' })}
-                    >
-                      <MessageSquare className="h-5 w-5" />
-                      <span>{commentCount}</span>
-                    </Button>
-                  </div>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="flex items-center gap-2">
-                        <Share2 className="h-5 w-5" /> 
-                        Share
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="ios-card p-1" align="end">
-                      <DropdownMenuItem onClick={() => handleShare('clipboard')} className="cursor-pointer rounded-lg focus:bg-secondary">
-                        Copy Link
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleShare('twitter')} className="cursor-pointer rounded-lg focus:bg-secondary">
-                        Share on Twitter
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleShare('facebook')} className="cursor-pointer rounded-lg focus:bg-secondary">
-                        Share on Facebook
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleShare('whatsapp')} className="cursor-pointer rounded-lg focus:bg-secondary">
-                        Share on WhatsApp
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                
-                {/* Comments Section */}
-                <CommentSection 
-                  diaryEntryId={entry.id} 
-                  updateCommentCount={updateCommentCount}
-                />
-              </article>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </main>
       
