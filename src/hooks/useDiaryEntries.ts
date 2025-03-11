@@ -15,13 +15,21 @@ export type DiaryEntry = {
   user_id: string;
 };
 
-export const useDiaryEntries = (selectedTag: string | null) => {
+type UseDiaryEntriesOptions = {
+  selectedTag?: string | null;
+  userId?: string | null;
+  publicOnly?: boolean;
+  limit?: number;
+};
+
+export const useDiaryEntries = (options: UseDiaryEntriesOptions = {}) => {
+  const { selectedTag = null, userId = null, publicOnly = false, limit = 50 } = options;
   const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDiaryEntries();
-  }, [selectedTag]);
+  }, [selectedTag, userId, publicOnly]);
 
   const fetchDiaryEntries = async () => {
     try {
@@ -30,9 +38,20 @@ export const useDiaryEntries = (selectedTag: string | null) => {
       let query = supabase
         .from('diary_entries')
         .select("*")
-        .eq('is_private', false)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(limit);
       
+      // Filter by user ID if provided
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+      
+      // Filter by public/private status
+      if (publicOnly) {
+        query = query.eq('is_private', false);
+      }
+      
+      // Filter by tag if provided
       if (selectedTag) {
         query = query.ilike('content', `%#${selectedTag}%`);
       }
@@ -69,8 +88,21 @@ export const useDiaryEntries = (selectedTag: string | null) => {
     return filtered.length;
   };
 
-  const handleDeleteEntry = (id: string) => {
-    setDiaryEntries(prevEntries => prevEntries.filter(entry => entry.id !== id));
+  const handleDeleteEntry = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('diary_entries')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      setDiaryEntries(prevEntries => prevEntries.filter(entry => entry.id !== id));
+      toast.success("Entry deleted successfully");
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+      toast.error("Failed to delete entry");
+    }
   };
 
   const sortByLikes = () => {

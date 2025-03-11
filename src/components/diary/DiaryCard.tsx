@@ -108,69 +108,71 @@ const DiaryCard = ({
   };
 
   return (
-    <Card className="diary-card-transparent relative overflow-hidden">
-      <CardHeader>
+    <div className="diary-card relative overflow-hidden">
+      <div className="p-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-xl font-serif font-medium">{title}</h3>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-500" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="rounded-3xl">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete your diary entry.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={handleDelete}
-                  className="bg-red-500 hover:bg-red-600 rounded-full"
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? "Deleting..." : "Delete"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-        <p className="text-sm text-gray-500">
-          {format(new Date(date), "MMMM d, yyyy")}
-        </p>
-      </CardHeader>
-      
-      <CardContent>
-        <Link to={`/diary/${id}`}>
-          <p className="text-gray-600 font-serif whitespace-pre-wrap leading-relaxed">{content}</p>
-        </Link>
-      </CardContent>
-      
-      <CardFooter className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <button 
-            className={`flex items-center gap-1 ${isLiked ? "text-red-500" : "text-gray-500"}`} 
-            onClick={handleLike}
-          >
-            <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
-            <span className="text-sm">{likeCount}</span>
-          </button>
-          <Link to={`/diary/${id}#comments`} className="flex items-center gap-1 text-gray-500">
-            <MessageCircle className="h-4 w-4" />
-            <span className="text-sm">{comments}</span>
-          </Link>
+          
+          {user && user.id === (user?.id) && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-500" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="rounded-3xl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your diary entry.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleDelete}
+                    className="bg-red-500 hover:bg-red-600 rounded-full"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? "Deleting..." : "Delete"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
         
-        {isPrivate && (
-          <div className="flex items-center text-gray-500">
-            <Lock className="h-4 w-4" />
+        <p className="text-sm text-gray-500 font-serif italic mb-4">
+          {format(new Date(date), "MMMM d, yyyy")}
+        </p>
+        
+        <Link to={`/diary/${id}`}>
+          <p className="text-gray-600 font-serif whitespace-pre-wrap leading-relaxed line-clamp-4 mb-4">{content}</p>
+        </Link>
+        
+        <div className="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-4">
+            <button 
+              className={`flex items-center gap-1 ${isLiked ? "text-red-500" : "text-gray-500"}`} 
+              onClick={handleLike}
+            >
+              <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
+              <span className="text-sm">{likeCount}</span>
+            </button>
+            <Link to={`/diary/${id}#comments`} className="flex items-center gap-1 text-gray-500">
+              <MessageCircle className="h-4 w-4" />
+              <span className="text-sm">{comments}</span>
+            </Link>
           </div>
-        )}
-      </CardFooter>
-    </Card>
+          
+          {isPrivate && (
+            <div className="flex items-center text-gray-500">
+              <Lock className="h-4 w-4" />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
