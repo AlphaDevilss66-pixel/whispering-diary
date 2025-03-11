@@ -44,30 +44,34 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
     
     try {
       setIsLoading(true);
-      // Fix: Use the correct table name and query structure
-      const { data, error } = await supabase
+      
+      // First, fetch all comments for this diary entry
+      const { data: commentsData, error: commentsError } = await supabase
         .from("diary_comments")
-        .select(`
-          id,
-          content,
-          created_at,
-          user_id,
-          diary_entry_id,
-          profiles:user_id(username, avatar_url, full_name)
-        `)
+        .select("*")
         .eq("diary_entry_id", diaryEntryId)
         .order("created_at", { ascending: true });
 
-      if (error) throw error;
+      if (commentsError) throw commentsError;
       
-      // Transform data to match our Comment type
-      const formattedComments = data.map(comment => ({
-        ...comment,
-        user: comment.profiles
-      })) as Comment[];
+      // Then, for each comment, fetch the user profile
+      const commentsWithProfiles = await Promise.all(
+        commentsData.map(async (comment) => {
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select("username, avatar_url, full_name")
+            .eq("id", comment.user_id)
+            .single();
+            
+          return {
+            ...comment,
+            user: profileError ? null : profileData
+          } as Comment;
+        })
+      );
       
-      setComments(formattedComments);
-      updateCommentCount(formattedComments.length);
+      setComments(commentsWithProfiles);
+      updateCommentCount(commentsWithProfiles.length);
     } catch (error) {
       console.error("Error fetching comments:", error);
       toast.error("Failed to load comments");
@@ -82,7 +86,7 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
     try {
       setIsSubmitting(true);
       
-      // Insert new comment using the correct table and schema
+      // Insert new comment
       const { data, error } = await supabase
         .from("diary_comments")
         .insert({

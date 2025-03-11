@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -20,38 +20,38 @@ export function useProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
+  const fetchProfile = useCallback(async () => {
     if (!user) {
       setProfile(null);
       setLoading(false);
       return;
     }
 
-    async function fetchProfile() {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
 
-        if (error) {
-          throw error;
-        }
-
-        setProfile(data as Profile);
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-        setError(error as Error);
-        toast.error("Failed to load profile");
-      } finally {
-        setLoading(false);
+      if (error) {
+        throw error;
       }
-    }
 
-    fetchProfile();
+      setProfile(data as Profile);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      setError(error as Error);
+      toast.error("Failed to load profile");
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const updateProfile = async (updates: Partial<Omit<Profile, "id" | "created_at" | "updated_at">>) => {
     if (!user) return { error: new Error("Not authenticated") };
@@ -64,12 +64,15 @@ export function useProfile() {
 
       if (error) throw error;
 
+      // Update local state
       setProfile(prev => prev ? { ...prev, ...updates } : null);
-      toast.success("Profile updated successfully");
+      
+      // Refetch to ensure we have the latest data
+      await fetchProfile();
+      
       return { success: true };
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error("Failed to update profile");
       return { error };
     }
   };

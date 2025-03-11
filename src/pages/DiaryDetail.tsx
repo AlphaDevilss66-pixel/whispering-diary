@@ -32,7 +32,7 @@ type DiaryEntry = {
     username: string;
     avatar_url: string;
     full_name: string;
-  };
+  } | null;
 };
 
 const DiaryDetail = () => {
@@ -51,26 +51,33 @@ const DiaryDetail = () => {
       try {
         setLoading(true);
         
-        const { data, error } = await supabase
+        // First fetch the diary entry
+        const { data: entryData, error: entryError } = await supabase
           .from('diary_entries')
-          .select(`
-            id, title, content, created_at, is_private, 
-            likes, comments, user_id,
-            profiles:user_id(username, avatar_url, full_name)
-          `)
+          .select('*')
           .eq('id', id)
           .single();
           
-        if (error) throw error;
+        if (entryError) throw entryError;
         
-        // Transform data to match our DiaryEntry type
-        const transformedData = {
-          ...data,
-          author: data.profiles
-        } as unknown as DiaryEntry;
+        // Then fetch the author's profile
+        const { data: authorData, error: authorError } = await supabase
+          .from('profiles')
+          .select('username, avatar_url, full_name')
+          .eq('id', entryData.user_id)
+          .single();
+        
+        // It's okay if we can't find the author
+        const author = authorError ? null : authorData;
+        
+        // Create the full diary entry with author information
+        const transformedData: DiaryEntry = {
+          ...entryData,
+          author: author
+        };
         
         setDiaryEntry(transformedData);
-        setLikeCount(data.likes);
+        setLikeCount(entryData.likes);
       } catch (error) {
         console.error("Error fetching diary entry:", error);
         toast.error("Failed to load diary entry");

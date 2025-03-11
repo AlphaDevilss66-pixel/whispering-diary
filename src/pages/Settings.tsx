@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -40,7 +39,7 @@ import Footer from "@/components/layout/Footer";
 
 const Settings = () => {
   const { user, signOut } = useAuth();
-  const { profile, refetchProfile } = useProfile();
+  const { profile, updateProfile } = useProfile();
   const navigate = useNavigate();
   
   const [fullName, setFullName] = useState("");
@@ -69,18 +68,14 @@ const Settings = () => {
     try {
       setIsUpdating(true);
       
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: fullName,
-          username,
-          bio
-        })
-        .eq("id", user.id);
-        
-      if (error) throw error;
+      const result = await updateProfile({
+        full_name: fullName,
+        username,
+        bio
+      });
       
-      await refetchProfile();
+      if (result.error) throw result.error;
+      
       toast.success("Profile updated successfully");
     } catch (error) {
       console.error("Error updating profile:", error);
