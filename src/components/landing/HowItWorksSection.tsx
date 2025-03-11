@@ -1,4 +1,3 @@
-
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { Lock, BookOpen, MessageCircle } from "lucide-react";
@@ -114,7 +113,7 @@ const HowItWorksSection = () => {
               whileHover={{ y: -5, transition: { type: "spring", stiffness: 300 } }}
               className="ios-card p-7 flex flex-col items-center text-center relative group hover:shadow-xl transition-all duration-300"
             >
-              <div className="absolute -right-3 -top-3 w-10 h-10 flex items-center justify-center text-white font-medium bg-ios-blue rounded-full shadow-md z-10">
+              <div className="absolute -right-2 -top-2 w-8 h-8 flex items-center justify-center text-white font-medium bg-ios-blue rounded-full shadow-lg">
                 {step.step}
               </div>
               <motion.div 
