@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Hash } from "lucide-react";
+import { Hash, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 type Comment = {
@@ -40,7 +40,9 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchComments();
+    if (diaryEntryId) {
+      fetchComments();
+    }
   }, [diaryEntryId]);
 
   const fetchComments = async () => {
@@ -100,7 +102,10 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
         })
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Insert comment error:", error);
+        throw error;
+      }
       
       // Increment comment count on diary entry
       const { error: updateError } = await supabase
@@ -108,7 +113,10 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
         .update({ comments: comments.length + 1 })
         .eq("id", diaryEntryId);
         
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Update entry error:", updateError);
+        throw updateError;
+      }
       
       // Add new comment to state with user profile info
       const newCommentWithUser = {
@@ -181,7 +189,7 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
       <h2 className="text-xl font-medium" id="comments">Comments ({comments.length})</h2>
       
       {/* Comment Form */}
-      {user && (
+      {user ? (
         <div className="flex gap-4">
           <Avatar className="h-10 w-10">
             <AvatarImage src={profile?.avatar_url || ""} />
@@ -194,7 +202,7 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
               placeholder="Add a comment... (use #hashtags to categorize)"
               value={newComment}
               onChange={e => setNewComment(e.target.value)}
-              className="ios-input min-h-[100px] rounded-xl bg-gray-50 border-gray-200"
+              className="ios-input min-h-[100px] rounded-xl bg-gray-50 border-gray-200 dark:bg-ios-dark-elevated"
             />
             <div className="flex justify-end">
               <Button 
@@ -202,17 +210,31 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
                 disabled={isSubmitting || !newComment.trim()}
                 className="rounded-xl"
               >
-                {isSubmitting ? "Posting..." : "Post Comment"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Posting...
+                  </>
+                ) : (
+                  "Post Comment"
+                )}
               </Button>
             </div>
           </div>
+        </div>
+      ) : (
+        <div className="bg-muted/40 rounded-xl p-4 text-center">
+          Please <Button variant="link" onClick={() => navigate('/login')} className="px-1 h-auto">log in</Button> to leave a comment.
         </div>
       )}
       
       {/* Comments List */}
       <div className="space-y-6">
         {isLoading ? (
-          <div className="text-center py-6">Loading comments...</div>
+          <div className="text-center py-6">
+            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+            Loading comments...
+          </div>
         ) : comments.length === 0 ? (
           <div className="text-center py-6 text-gray-500">
             No comments yet. Be the first to comment!
@@ -236,7 +258,7 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
                       {format(new Date(comment.created_at), "MMM d, yyyy 'at' h:mm a")}
                     </span>
                   </div>
-                  <p className="mt-1 text-gray-700">{renderContentWithHashtags(comment.content)}</p>
+                  <p className="mt-1 text-gray-700 dark:text-gray-300">{renderContentWithHashtags(comment.content)}</p>
                   
                   {hashtags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
