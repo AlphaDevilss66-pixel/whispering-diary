@@ -79,11 +79,11 @@ const CommentItem = ({ comment }: CommentItemProps) => {
       <div className="flex-1">
         <div className="flex items-baseline gap-2">
           <span className="font-medium">{comment.user?.username || "Anonymous"}</span>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-gray-500 font-serif italic">
             {format(new Date(comment.created_at), "MMM d, yyyy 'at' h:mm a")}
           </span>
         </div>
-        <p className="mt-1 text-gray-700 dark:text-gray-300">{renderContentWithHashtags(comment.content)}</p>
+        <p className="mt-1 text-gray-700 dark:text-gray-300 font-serif text-base leading-relaxed">{renderContentWithHashtags(comment.content)}</p>
         
         {hashtags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
@@ -91,7 +91,7 @@ const CommentItem = ({ comment }: CommentItemProps) => {
               <Badge 
                 key={index} 
                 variant="secondary" 
-                className="text-xs cursor-pointer"
+                className="text-xs cursor-pointer font-serif"
                 onClick={() => handleTagClick(tag)}
               >
                 <Hash className="h-3 w-3 mr-1" />

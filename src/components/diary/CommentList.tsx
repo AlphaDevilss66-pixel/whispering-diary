@@ -23,23 +23,23 @@ interface CommentListProps {
 const CommentList = ({ comments, isLoading }: CommentListProps) => {
   if (isLoading) {
     return (
-      <div className="text-center py-6 rounded-full">
+      <div className="text-center py-6 font-medium">
         <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-        Loading comments...
+        <span className="text-gray-600 font-serif">Loading comments...</span>
       </div>
     );
   }
 
   if (comments.length === 0) {
     return (
-      <div className="text-center py-6 text-gray-500 rounded-full">
+      <div className="text-center py-6 text-gray-500 font-serif italic">
         No comments yet. Be the first to comment!
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 rounded-full overflow-hidden">
+    <div className="space-y-6 overflow-hidden">
       {comments.map(comment => (
         <CommentItem key={comment.id} comment={comment} />
       ))}

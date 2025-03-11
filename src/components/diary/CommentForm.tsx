@@ -76,8 +76,8 @@ const CommentForm = ({ diaryEntryId, onCommentAdded }: CommentFormProps) => {
 
   if (!user) {
     return (
-      <div className="bg-muted/40 rounded-full p-4 text-center">
-        Please <Button variant="link" onClick={() => navigate('/login')} className="px-1 h-auto">log in</Button> to leave a comment.
+      <div className="bg-muted/40 rounded-3xl p-4 text-center font-serif">
+        Please <Button variant="link" onClick={() => navigate('/login')} className="px-1 h-auto font-medium">log in</Button> to leave a comment.
       </div>
     );
   }
@@ -86,7 +86,7 @@ const CommentForm = ({ diaryEntryId, onCommentAdded }: CommentFormProps) => {
     <div className="flex gap-4">
       <Avatar className="h-10 w-10">
         <AvatarImage src={profile?.avatar_url || ""} />
-        <AvatarFallback className="bg-primary/10 text-primary rounded-full">
+        <AvatarFallback className="bg-primary/10 text-primary">
           {getInitials(profile?.full_name || "")}
         </AvatarFallback>
       </Avatar>
@@ -95,13 +95,13 @@ const CommentForm = ({ diaryEntryId, onCommentAdded }: CommentFormProps) => {
           placeholder="Add a comment... (use #hashtags to categorize)"
           value={newComment}
           onChange={e => setNewComment(e.target.value)}
-          className="ios-input min-h-[100px] rounded-full bg-gray-50 border-gray-200 dark:bg-ios-dark-elevated"
+          className="ios-input min-h-[100px] rounded-3xl bg-gray-50 border-gray-200 dark:bg-ios-dark-elevated font-serif placeholder:text-gray-400 placeholder:font-serif text-base"
         />
         <div className="flex justify-end">
           <Button 
             onClick={handleSubmitComment} 
             disabled={isSubmitting || !newComment.trim()}
-            className="rounded-full"
+            className="rounded-full font-medium"
           >
             {isSubmitting ? (
               <>
