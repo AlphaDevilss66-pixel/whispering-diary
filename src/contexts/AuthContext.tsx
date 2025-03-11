@@ -38,6 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initializeAuth = async () => {
       try {
         const { data } = await supabase.auth.getSession();
+        console.log("Initial session data:", data.session ? "Session exists" : "No session");
         setSession(data.session);
         setUser(data.session?.user || null);
         
@@ -135,7 +136,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Clear local session state first
+      // First check if we actually have a session before attempting to sign out
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        console.log("No active session found, skipping API call");
+        // Just clear local state and redirect
+        setSession(null);
+        setUser(null);
+        navigate("/");
+        toast.success("Successfully signed out");
+        return;
+      }
+      
+      // We have a session, so clear local session state first
       setSession(null);
       setUser(null);
       
@@ -143,14 +157,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error("Error signing out:", error);
-        throw error;
+        // If we get a 403 session_not_found error, we can just ignore it
+        // as the user is effectively signed out already
+        if (error.message !== "Session not found") {
+          throw error;
+        }
       }
       
       navigate("/");
       toast.success("Successfully signed out");
     } catch (error: any) {
       console.error("Error during sign out:", error);
-      toast.error(error.message || "Error during sign out");
+      // Still navigate to home page even on error
+      navigate("/");
+      // Only show error if it's not the "Session not found" error
+      if (error.message !== "Session not found") {
+        toast.error(error.message || "Error during sign out");
+      } else {
+        toast.success("Successfully signed out");
+      }
     }
   };
 
