@@ -1,11 +1,21 @@
-
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Heart, Calendar, Lock, Globe, Share2 } from "lucide-react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Heart, Calendar, Lock, Globe, Share2, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import CommentSection from "@/components/diary/CommentSection";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
@@ -43,6 +53,8 @@ const DiaryDetail = () => {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     async function fetchDiaryEntry() {
@@ -51,7 +63,6 @@ const DiaryDetail = () => {
       try {
         setLoading(true);
         
-        // First fetch the diary entry
         const { data: entryData, error: entryError } = await supabase
           .from('diary_entries')
           .select('*')
@@ -60,17 +71,14 @@ const DiaryDetail = () => {
           
         if (entryError) throw entryError;
         
-        // Then fetch the author's profile
         const { data: authorData, error: authorError } = await supabase
           .from('profiles')
           .select('username, avatar_url, full_name')
           .eq('id', entryData.user_id)
           .single();
         
-        // It's okay if we can't find the author
         const author = authorError ? null : authorData;
         
-        // Create the full diary entry with author information
         const transformedData: DiaryEntry = {
           ...entryData,
           author: author
@@ -106,7 +114,6 @@ const DiaryDetail = () => {
       if (error) throw error;
     } catch (error) {
       console.error("Error updating likes:", error);
-      // Revert UI state if update fails
       setLiked(liked);
       setLikeCount(likeCount);
       toast.error("Failed to update likes");
@@ -123,7 +130,6 @@ const DiaryDetail = () => {
     const url = window.location.href;
     const title = `Check out this diary entry: ${diaryEntry.title}`;
     
-    // Different share methods based on platform
     switch (platform) {
       case 'clipboard':
         try {
@@ -168,6 +174,27 @@ const DiaryDetail = () => {
       .toUpperCase()
       .substring(0, 2);
   };
+  
+  const handleDelete = async () => {
+    if (!diaryEntry || !user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('diary_entries')
+        .delete()
+        .eq('id', diaryEntry.id);
+        
+      if (error) throw error;
+      
+      toast.success("Diary entry deleted successfully");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error deleting diary entry:", error);
+      toast.error("Failed to delete diary entry");
+    }
+  };
+  
+  const isOwner = user && diaryEntry?.user_id === user.id;
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -224,6 +251,34 @@ const DiaryDetail = () => {
                         </>
                       )}
                     </Badge>
+                    
+                    {isOwner && (
+                      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-8 w-8 rounded-full text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="ios-card">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete your diary entry.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                     
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

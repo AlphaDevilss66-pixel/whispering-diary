@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, MessageSquare, Share2, Clock, Lock, Globe, Hash } from "lucide-react";
+import { Heart, MessageSquare, Share2, Clock, Lock, Globe, Hash, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,8 +10,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DiaryCardProps {
   id: string;
@@ -23,6 +34,7 @@ interface DiaryCardProps {
   comments: number;
   isPrivate: boolean;
   className?: string;
+  onDelete?: () => void;
 }
 
 const DiaryCard = ({
@@ -34,11 +46,14 @@ const DiaryCard = ({
   comments,
   isPrivate,
   className,
+  onDelete,
 }: DiaryCardProps) => {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(likes);
   const [commentCount, setCommentCount] = useState(comments);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
   const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -51,7 +66,6 @@ const DiaryCard = ({
     setLikeCount(newLikeCount);
     
     try {
-      // Update like count in the database
       const { error } = await supabase
         .from("diary_entries")
         .update({ likes: newLikeCount })
@@ -61,7 +75,6 @@ const DiaryCard = ({
       
     } catch (error) {
       console.error("Error updating like count:", error);
-      // Revert the UI if there was an error
       setLiked(!newLikeStatus);
       setLikeCount(liked ? likeCount + 1 : likeCount - 1);
       toast.error("Failed to update like count");
@@ -72,7 +85,6 @@ const DiaryCard = ({
     const url = `${window.location.origin}/diary/${id}`;
     const shareTitle = `Check out this diary entry: ${title}`;
     
-    // Different share methods based on platform
     switch (platform) {
       case 'clipboard':
         try {
@@ -108,7 +120,34 @@ const DiaryCard = ({
     }
   };
 
-  // Extract hashtags from content
+  const handleDelete = async () => {
+    if (!user) {
+      toast.error("You must be logged in to delete entries");
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from("diary_entries")
+        .delete()
+        .eq("id", id);
+        
+      if (error) throw error;
+      
+      toast.success("Diary entry deleted successfully");
+      
+      if (onDelete) {
+        onDelete();
+      } else {
+        navigate("/dashboard");
+      }
+      
+    } catch (error) {
+      console.error("Error deleting diary entry:", error);
+      toast.error("Failed to delete diary entry");
+    }
+  };
+
   const extractHashtags = (text: string) => {
     const regex = /#(\w+)/g;
     const matches = text.match(regex) || [];
@@ -121,14 +160,12 @@ const DiaryCard = ({
     navigate(`/explore?tag=${tag}`);
   };
 
-  // Format the date for display
   const formattedDate = new Date(date).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
   });
   
-  // Render content with clickable hashtags
   const renderContentWithHashtags = (text: string) => {
     const parts = text.split(/(#\w+)/g);
     
@@ -149,12 +186,10 @@ const DiaryCard = ({
     });
   };
   
-  // Truncate content if too long
   const truncatedContent = content.length > 150 
     ? content.substring(0, 150) + '...' 
     : content;
   
-  // Extract hashtags for display
   const hashtags = extractHashtags(content);
   
   return (
@@ -229,31 +264,59 @@ const DiaryCard = ({
           </Button>
         </div>
         
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="p-0 h-auto"
-            >
-              <Share2 className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="ios-card p-1 min-w-[180px] rounded-xl" align="end">
-            <DropdownMenuItem onClick={() => handleShare('clipboard')} className="cursor-pointer rounded-lg focus:bg-secondary">
-              Copy Link
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleShare('twitter')} className="cursor-pointer rounded-lg focus:bg-secondary">
-              Share on Twitter
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleShare('facebook')} className="cursor-pointer rounded-lg focus:bg-secondary">
-              Share on Facebook
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleShare('whatsapp')} className="cursor-pointer rounded-lg focus:bg-secondary">
-              Share on WhatsApp
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center space-x-2">
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="p-0 h-auto text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="ios-card">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete your diary entry.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="p-0 h-auto"
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="ios-card p-1 min-w-[180px] rounded-xl" align="end">
+              <DropdownMenuItem onClick={() => handleShare('clipboard')} className="cursor-pointer rounded-lg focus:bg-secondary">
+                Copy Link
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleShare('twitter')} className="cursor-pointer rounded-lg focus:bg-secondary">
+                Share on Twitter
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleShare('facebook')} className="cursor-pointer rounded-lg focus:bg-secondary">
+                Share on Facebook
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleShare('whatsapp')} className="cursor-pointer rounded-lg focus:bg-secondary">
+                Share on WhatsApp
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
@@ -30,35 +31,39 @@ const Dashboard = () => {
   const { user } = useAuth();
   
   useEffect(() => {
-    async function fetchDiaryEntries() {
-      if (!user) return;
-      
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('diary_entries')
-          .select('id, title, content, created_at, is_private, likes, comments')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-          
-        if (error) {
-          throw error;
-        }
-        
-        setDiaryEntries(data as DiaryEntry[]);
-      } catch (error) {
-        console.error("Error fetching diary entries:", error);
-        toast.error("Failed to load diary entries");
-      } finally {
-        setLoading(false);
-      }
-    }
-    
     fetchDiaryEntries();
   }, [user]);
   
+  const fetchDiaryEntries = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('diary_entries')
+        .select('id, title, content, created_at, is_private, likes, comments')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        throw error;
+      }
+      
+      setDiaryEntries(data as DiaryEntry[]);
+    } catch (error) {
+      console.error("Error fetching diary entries:", error);
+      toast.error("Failed to load diary entries");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const toggleNewEntry = () => {
     setShowNewEntry(!showNewEntry);
+  };
+  
+  const handleDeleteEntry = (id: string) => {
+    setDiaryEntries(prevEntries => prevEntries.filter(entry => entry.id !== id));
   };
   
   const filteredDiaries = diaryEntries.filter(diary => 
@@ -138,6 +143,7 @@ const Dashboard = () => {
                       likes={diary.likes}
                       comments={diary.comments}
                       isPrivate={diary.is_private}
+                      onDelete={() => handleDeleteEntry(diary.id)}
                     />
                   ))}
                 </div>
@@ -176,6 +182,7 @@ const Dashboard = () => {
                         likes={diary.likes}
                         comments={diary.comments}
                         isPrivate={diary.is_private}
+                        onDelete={() => handleDeleteEntry(diary.id)}
                       />
                     ))}
                 </div>
@@ -199,6 +206,7 @@ const Dashboard = () => {
                         likes={diary.likes}
                         comments={diary.comments}
                         isPrivate={diary.is_private}
+                        onDelete={() => handleDeleteEntry(diary.id)}
                       />
                     ))}
                 </div>
