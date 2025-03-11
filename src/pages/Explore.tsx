@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Clock, Heart, Zap, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 type DiaryEntry = {
   id: string;
@@ -31,11 +33,19 @@ const Explore = () => {
   const [sortBy, setSortBy] = useState<"recent" | "popular" | "trending">("recent");
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const navigate = useNavigate();
   
   useEffect(() => {
+    if (!user) {
+      navigate("/");
+      return;
+    }
+    
     async function fetchPublicEntries() {
       try {
         setLoading(true);
+        console.log("Fetching public entries...");
         const { data, error } = await supabase
           .from('diary_entries')
           .select('id, title, content, created_at, is_private, likes, comments')
@@ -43,8 +53,11 @@ const Explore = () => {
           .order('created_at', { ascending: false });
           
         if (error) {
+          console.error("Supabase error:", error);
           throw error;
         }
+        
+        console.log("Public entries data:", data);
         
         const transformedEntries = (data as DiaryEntry[]).map(entry => ({
           ...entry,
@@ -61,7 +74,7 @@ const Explore = () => {
     }
     
     fetchPublicEntries();
-  }, []);
+  }, [user, navigate]);
   
   const handleTagToggle = (tag: string) => {
     if (selectedTags.includes(tag)) {

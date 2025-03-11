@@ -1,9 +1,8 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 type AuthContextType = {
   session: Session | null;
@@ -31,6 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     // Get initial session
@@ -39,8 +39,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user || null);
       setIsLoading(false);
       
-      // If user is logged in, redirect to dashboard
-      if (session?.user) {
+      // If user is logged in and on the landing page, redirect to dashboard
+      if (session?.user && location.pathname === '/') {
         navigate("/dashboard");
       }
     });
@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
