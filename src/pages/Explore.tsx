@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +51,6 @@ const Explore = () => {
         .eq('is_private', false)
         .order('created_at', { ascending: false });
       
-      // If there's a selected tag, filter by that tag
       if (selectedTag) {
         query = query.ilike('content', `%#${selectedTag}%`);
       }
@@ -74,7 +72,6 @@ const Explore = () => {
     }
   };
 
-  // Extract all hashtags from diary entries and count their occurrences
   const fetchPopularTags = async () => {
     try {
       const { data, error } = await supabase
@@ -87,7 +84,6 @@ const Explore = () => {
         return;
       }
       
-      // Extract hashtags from all diary entries
       const hashtagRegex = /#(\w+)/g;
       const hashtags: Record<string, number> = {};
       
@@ -101,11 +97,10 @@ const Explore = () => {
         });
       });
       
-      // Convert to array and sort by count
       const sortedTags = Object.entries(hashtags)
         .map(([name, count]) => ({ name, count }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 10); // Get top 10
+        .slice(0, 10);
       
       setPopularTags(sortedTags);
     } catch (error) {
@@ -127,7 +122,6 @@ const Explore = () => {
     e.preventDefault();
     if (!searchTerm.trim()) return;
     
-    // Filter diary entries based on search term
     const filtered = diaryEntries.filter(entry => 
       entry.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
       entry.content.toLowerCase().includes(searchTerm.toLowerCase())
@@ -136,12 +130,21 @@ const Explore = () => {
     setDiaryEntries(filtered);
     toast.info(`Found ${filtered.length} results for "${searchTerm}"`);
     
-    // Reset search if the term is cleared
     if (!searchTerm) {
       fetchDiaryEntries();
     }
   };
-  
+
+  const handleDeleteEntry = async (id: string) => {
+    try {
+      setDiaryEntries(prevEntries => prevEntries.filter(entry => entry.id !== id));
+      toast.success("Entry deleted successfully");
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+      toast.error("Failed to delete entry");
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <NavBar />
@@ -239,6 +242,7 @@ const Explore = () => {
                           likes={entry.likes}
                           comments={entry.comments}
                           isPrivate={entry.is_private}
+                          onDelete={handleDeleteEntry}
                         />
                       ))}
                     </div>
@@ -259,7 +263,6 @@ const Explore = () => {
                 </TabsContent>
                 
                 <TabsContent value="latest" className="mt-0">
-                  {/* Same content as trending but sorted by date */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {!loading && diaryEntries.map(entry => (
                       <DiaryCard
@@ -271,13 +274,13 @@ const Explore = () => {
                         likes={entry.likes}
                         comments={entry.comments}
                         isPrivate={entry.is_private}
+                        onDelete={handleDeleteEntry}
                       />
                     ))}
                   </div>
                 </TabsContent>
                 
                 <TabsContent value="popular" className="mt-0">
-                  {/* Same content as trending but sorted by likes */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {!loading && 
                       [...diaryEntries]
@@ -292,6 +295,7 @@ const Explore = () => {
                             likes={entry.likes}
                             comments={entry.comments}
                             isPrivate={entry.is_private}
+                            onDelete={handleDeleteEntry}
                           />
                         ))
                     }
