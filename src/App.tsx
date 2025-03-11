@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,6 +18,9 @@ import NotFound from "./pages/NotFound";
 // Apply iOS style to the entire app
 import "./ios-styles.css";
 
+// Create the query client
+const queryClient = new QueryClient();
+
 // Auth guard component that redirects authenticated users away from public routes
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
@@ -36,9 +38,6 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   if (!user) return <Navigate to="/" />;
   return <>{children}</>;
 };
-
-// Create the query client
-const queryClient = new QueryClient();
 
 // Define routes component so it has access to AuthContext
 const AppRoutes = () => {
@@ -61,17 +60,17 @@ const AppRoutes = () => {
 // Main App component
 const App = () => {
   return (
-    <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
         <AuthProvider>
           <TooltipProvider>
+            <AppRoutes />
             <Toaster />
             <Sonner className="ios-toast" />
-            <AppRoutes />
           </TooltipProvider>
         </AuthProvider>
-      </QueryClientProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 };
 
