@@ -114,7 +114,7 @@ const HowItWorksSection = () => {
               whileHover={{ y: -5, transition: { type: "spring", stiffness: 300 } }}
               className="ios-card p-7 flex flex-col items-center text-center relative group hover:shadow-xl transition-all duration-300"
             >
-              <div className="absolute -right-3 -top-3 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md font-medium text-ios-blue">
+              <div className="absolute -right-3 -top-3 w-10 h-10 flex items-center justify-center text-white font-medium bg-ios-blue rounded-full shadow-md z-10">
                 {step.step}
               </div>
               <motion.div 
