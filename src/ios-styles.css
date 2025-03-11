@@ -23,6 +23,7 @@ body {
   font-family: var(--ios-font);
   background-color: var(--ios-bg);
   color: var(--ios-text);
+  min-height: 100vh;
 }
 
 /* iOS Card styling */
