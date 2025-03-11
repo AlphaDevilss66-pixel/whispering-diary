@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -158,7 +157,7 @@ const Settings = () => {
                     <div>
                       <Avatar className="h-24 w-24">
                         <AvatarImage src={profile?.avatar_url || ""} />
-                        <AvatarFallback className="text-lg bg-primary/10 text-primary">
+                        <AvatarFallback className="text-lg bg-primary/10 text-primary rounded-full">
                           {getInitials(profile?.full_name || "")}
                         </AvatarFallback>
                       </Avatar>
@@ -208,7 +207,7 @@ const Settings = () => {
                   <Button
                     onClick={handleUpdateProfile}
                     disabled={isUpdating}
-                    className="rounded-xl"
+                    className="rounded-full"
                   >
                     {isUpdating ? "Saving..." : "Save Changes"}
                   </Button>
