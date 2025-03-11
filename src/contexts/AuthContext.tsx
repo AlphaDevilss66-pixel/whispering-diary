@@ -33,26 +33,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user || null);
       setIsLoading(false);
       
-      // If user is logged in and on the landing page, redirect to dashboard
       if (session?.user && location.pathname === '/') {
         navigate("/dashboard");
       }
     });
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user || null);
         setIsLoading(false);
         
-        // If user just signed in, redirect to dashboard
         if (event === 'SIGNED_IN') {
           navigate("/dashboard");
         }
@@ -126,10 +122,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
-      toast.success("Logout effettuato con successo");
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Error signing out:", error);
+        throw error;
+      }
+      
+      setSession(null);
+      setUser(null);
+      
+      navigate("/");
+      toast.success("Successfully signed out");
     } catch (error: any) {
-      toast.error(error.message || "Errore durante il logout");
+      console.error("Error during sign out:", error);
+      toast.error(error.message || "Error during sign out");
     }
   };
 
