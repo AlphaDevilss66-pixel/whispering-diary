@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,24 +34,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user || null);
-      setIsLoading(false);
-      
-      if (session?.user && location.pathname === '/') {
-        navigate("/dashboard");
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user || null);
+    // Initialize auth state
+    const initializeAuth = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        setSession(data.session);
+        setUser(data.session?.user || null);
+        
+        if (data.session?.user && location.pathname === '/') {
+          navigate("/dashboard");
+        }
+      } catch (error) {
+        console.error("Error getting auth session:", error);
+      } finally {
         setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        console.log("Auth state changed:", event);
+        setSession(currentSession);
+        setUser(currentSession?.user || null);
         
         if (event === 'SIGNED_IN') {
           navigate("/dashboard");
+        } else if (event === 'SIGNED_OUT') {
+          navigate("/");
         }
       }
     );
@@ -122,14 +135,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      // Clear local session state first
+      setSession(null);
+      setUser(null);
+      
+      // Then make the API call
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error("Error signing out:", error);
         throw error;
       }
-      
-      setSession(null);
-      setUser(null);
       
       navigate("/");
       toast.success("Successfully signed out");
