@@ -28,6 +28,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "react-router-dom";
 
 type DiaryCardProps = {
   id: string;
@@ -51,6 +52,8 @@ const DiaryCard = ({
   onDelete
 }: DiaryCardProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(likes);
   const { user } = useAuth();
 
   const handleDelete = async () => {
@@ -73,6 +76,34 @@ const DiaryCard = ({
       toast.error("Failed to delete entry");
     } finally {
       setIsDeleting(false);
+    }
+  };
+  
+  const handleLike = async () => {
+    if (!user) {
+      toast.error("Please log in to like this entry");
+      return;
+    }
+    
+    setIsLiked(!isLiked);
+    const newLikeCount = isLiked ? likeCount - 1 : likeCount + 1;
+    setLikeCount(newLikeCount);
+    
+    try {
+      const { error } = await supabase
+        .from('diary_entries')
+        .update({ likes: newLikeCount })
+        .eq('id', id);
+        
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      // Revert changes if the update fails
+      setIsLiked(!isLiked);
+      setLikeCount(likeCount);
+      console.error("Error updating likes:", error);
+      toast.error("Failed to update likes");
     }
   };
 
@@ -113,19 +144,24 @@ const DiaryCard = ({
       </CardHeader>
       
       <CardContent>
-        <p className="text-gray-600 whitespace-pre-wrap">{content}</p>
+        <Link to={`/diary/${id}`}>
+          <p className="text-gray-600 whitespace-pre-wrap">{content}</p>
+        </Link>
       </CardContent>
       
       <CardFooter className="flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <button className="flex items-center gap-1 text-gray-500">
-            <Heart className="h-4 w-4" />
-            <span className="text-sm">{likes}</span>
+          <button 
+            className={`flex items-center gap-1 ${isLiked ? "text-red-500" : "text-gray-500"}`} 
+            onClick={handleLike}
+          >
+            <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
+            <span className="text-sm">{likeCount}</span>
           </button>
-          <button className="flex items-center gap-1 text-gray-500">
+          <Link to={`/diary/${id}#comments`} className="flex items-center gap-1 text-gray-500">
             <MessageCircle className="h-4 w-4" />
             <span className="text-sm">{comments}</span>
-          </button>
+          </Link>
         </div>
         
         {isPrivate && (
