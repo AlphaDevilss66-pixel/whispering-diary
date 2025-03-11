@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -158,7 +159,7 @@ const NavBar = () => {
                     <Book className="mr-2 h-4 w-4 text-ios-blue group-hover:scale-110 transition-transform" />
                     <span>My Diary</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="rounded-lg focus:bg-secondary group">
+                  <DropdownMenuItem onClick={() => navigate("/settings")} className="rounded-lg focus:bg-secondary group">
                     <Settings className="mr-2 h-4 w-4 text-ios-blue group-hover:scale-110 transition-transform" />
                     <span>Settings</span>
                   </DropdownMenuItem>

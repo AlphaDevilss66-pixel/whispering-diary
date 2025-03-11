@@ -12,6 +12,8 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Explore from "./pages/Explore";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
+import DiaryDetail from "./pages/DiaryDetail";
 import NotFound from "./pages/NotFound";
 
 // Auth guard component that redirects authenticated users away from public routes
@@ -59,6 +61,8 @@ const AppRoutes = () => {
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/explore" element={<PrivateRoute><Explore /></PrivateRoute>} />
       <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+      <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+      <Route path="/diary/:id" element={<PrivateRoute><DiaryDetail /></PrivateRoute>} />
       {/* This route handles OAuth redirects */}
       <Route path="/auth/callback" element={<Navigate to="/dashboard" />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
