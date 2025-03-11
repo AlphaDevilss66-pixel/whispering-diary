@@ -10,6 +10,7 @@ import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
 import DiaryCard from "@/components/diary/DiaryCard";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type DiaryEntry = {
   id: string;
@@ -58,11 +59,16 @@ const Explore = () => {
       
       const { data, error } = await query;
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching diary entries:", error);
+        toast.error("Failed to load diary entries");
+        return;
+      }
       
       setDiaryEntries(data || []);
     } catch (error) {
       console.error("Error fetching diary entries:", error);
+      toast.error("Something went wrong while loading diary entries");
     } finally {
       setLoading(false);
     }
@@ -76,17 +82,22 @@ const Explore = () => {
         .select('content')
         .eq('is_private', false);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching tag data:", error);
+        return;
+      }
       
       // Extract hashtags from all diary entries
       const hashtagRegex = /#(\w+)/g;
       const hashtags: Record<string, number> = {};
       
       data?.forEach(entry => {
-        const matches = entry.content.match(hashtagRegex) || [];
+        const matches = [...entry.content.matchAll(hashtagRegex)];
         matches.forEach(match => {
-          const tag = match.substring(1);
-          hashtags[tag] = (hashtags[tag] || 0) + 1;
+          if (match[1]) {
+            const tag = match[1].toLowerCase();
+            hashtags[tag] = (hashtags[tag] || 0) + 1;
+          }
         });
       });
       
@@ -114,11 +125,25 @@ const Explore = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Implement search functionality here
+    if (!searchTerm.trim()) return;
+    
+    // Filter diary entries based on search term
+    const filtered = diaryEntries.filter(entry => 
+      entry.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      entry.content.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    setDiaryEntries(filtered);
+    toast.info(`Found ${filtered.length} results for "${searchTerm}"`);
+    
+    // Reset search if the term is cleared
+    if (!searchTerm) {
+      fetchDiaryEntries();
+    }
   };
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
       <NavBar />
       
       <main className="flex-1 pt-24 pb-16">
@@ -126,16 +151,16 @@ const Explore = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
               <h1 className="text-3xl font-serif font-semibold">Explore</h1>
-              <p className="text-gray-600">Discover diary entries from the community</p>
+              <p className="text-muted-foreground">Discover diary entries from the community</p>
             </div>
             
             <form onSubmit={handleSearch} className="w-full md:w-auto">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   type="search"
                   placeholder="Search diary entries"
-                  className="pl-10 pr-12 rounded-full border-gray-200 w-full md:w-[300px]"
+                  className="pl-10 pr-12 rounded-full border-muted w-full md:w-[300px]"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -182,7 +207,7 @@ const Explore = () => {
                         <X className="h-3 w-3" />
                       </Button>
                     </Badge>
-                    <span className="text-sm text-gray-500 ml-2">
+                    <span className="text-sm text-muted-foreground ml-2">
                       Showing entries with tag #{selectedTag}
                     </span>
                   </div>
@@ -193,11 +218,11 @@ const Explore = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {[...Array(4)].map((_, i) => (
                         <div key={i} className="diary-card p-6 animate-pulse space-y-3">
-                          <div className="h-5 w-1/3 bg-gray-200 rounded"></div>
-                          <div className="h-6 w-3/4 bg-gray-200 rounded"></div>
+                          <div className="h-5 w-1/3 bg-muted rounded"></div>
+                          <div className="h-6 w-3/4 bg-muted rounded"></div>
                           <div className="space-y-2">
-                            <div className="h-4 bg-gray-200 rounded"></div>
-                            <div className="h-4 bg-gray-200 rounded"></div>
+                            <div className="h-4 bg-muted rounded"></div>
+                            <div className="h-4 bg-muted rounded"></div>
                           </div>
                         </div>
                       ))}
@@ -218,8 +243,8 @@ const Explore = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12 bg-gray-50 rounded-2xl ios-card">
-                      <p className="text-gray-500">No diary entries found.</p>
+                    <div className="text-center py-12 bg-muted rounded-2xl ios-card">
+                      <p className="text-muted-foreground">No diary entries found.</p>
                       {selectedTag && (
                         <Button 
                           variant="link" 
@@ -297,7 +322,7 @@ const Explore = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-sm">No tags found.</p>
+                  <p className="text-muted-foreground text-sm">No tags found in entries.</p>
                 )}
               </div>
               
@@ -307,19 +332,42 @@ const Explore = () => {
                   Filters
                 </h3>
                 
-                {/* More filters could be added here */}
                 <div className="space-y-3">
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => {
+                      const oneWeekAgo = new Date();
+                      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                      const filtered = diaryEntries.filter(entry => 
+                        new Date(entry.created_at) >= oneWeekAgo
+                      );
+                      setDiaryEntries(filtered);
+                      toast.info(`Showing entries from the last week (${filtered.length})`);
+                    }}
+                  >
                     <Calendar className="h-4 w-4 mr-2" />
                     This week
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => {
+                      const sorted = [...diaryEntries].sort((a, b) => b.likes - a.likes);
+                      setDiaryEntries(sorted);
+                      toast.info("Entries sorted by most likes");
+                    }}
+                  >
                     <Flame className="h-4 w-4 mr-2" />
                     Most liked
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => fetchDiaryEntries()}
+                  >
                     <Sparkles className="h-4 w-4 mr-2" />
-                    Featured
+                    Reset filters
                   </Button>
                 </div>
               </div>

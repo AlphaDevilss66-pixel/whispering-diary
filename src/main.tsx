@@ -19,6 +19,12 @@ const getTheme = () => {
 // Set initial theme
 document.documentElement.setAttribute('data-theme', getTheme());
 
+// Create a simple theme listener to update when localStorage changes
+window.addEventListener('storage', () => {
+  const currentTheme = getTheme();
+  document.documentElement.setAttribute('data-theme', currentTheme);
+});
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
