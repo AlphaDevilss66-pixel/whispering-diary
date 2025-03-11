@@ -75,6 +75,13 @@ export default {
 						'4': '#D1D1D6',
 						'5': '#E5E5EA',
 						'6': '#F2F2F7',
+					},
+					'dark': {
+						'bg': '#000000',
+						'card': '#1c1c1e',
+						'elevated': '#2c2c2e',
+						'separator': '#38383A',
+						'highlight': '#3a3a3c'
 					}
 				}
 			},
@@ -86,6 +93,7 @@ export default {
 			boxShadow: {
 				'ios': '0 2px 10px rgba(0, 0, 0, 0.05)',
 				'ios-lg': '0 10px 25px -5px rgba(0, 0, 0, 0.05)',
+				'ios-dark': '0 2px 10px rgba(0, 0, 0, 0.3)',
 			},
 			keyframes: {
 				'accordion-down': {

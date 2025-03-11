@@ -1,3 +1,4 @@
+
 /* iOS-inspired styles */
 :root {
   --ios-bg: #f2f2f7;
@@ -11,9 +12,9 @@
 }
 
 [data-theme='dark'] {
-  --ios-bg: #1c1c1e;
-  --ios-card-bg: #2c2c2e;
-  --ios-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  --ios-bg: #000000;
+  --ios-card-bg: #1c1c1e;
+  --ios-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
   --ios-primary: #0a84ff;
   --ios-gray: #8e8e93;
   --ios-text: #ffffff;
@@ -36,6 +37,7 @@ body {
 
 [data-theme='dark'] .ios-card {
   border-color: rgba(255, 255, 255, 0.1);
+  background-color: #1c1c1e;
 }
 
 .diary-card {
@@ -48,6 +50,7 @@ body {
 
 [data-theme='dark'] .diary-card {
   border-color: rgba(255, 255, 255, 0.1);
+  background-color: #1c1c1e;
 }
 
 .diary-card:hover {
@@ -92,7 +95,7 @@ body {
 }
 
 [data-theme='dark'] .ios-tabs [data-state=active] {
-  background-color: #3a3a3c;
+  background-color: #2c2c2e;
 }
 
 /* Animation for new items */
@@ -142,6 +145,7 @@ button, .button {
 
 [data-theme='dark'] body {
   color: rgba(255, 255, 255, 0.9);
+  background-color: #000000;
 }
 
 [data-theme='dark'] .text-gray-600,
