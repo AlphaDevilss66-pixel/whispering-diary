@@ -108,7 +108,7 @@ const DiaryCard = ({
   };
 
   return (
-    <Card className="diary-card relative overflow-hidden">
+    <Card className="diary-card-transparent relative overflow-hidden">
       <CardHeader>
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-xl font-serif font-medium">{title}</h3>
@@ -145,7 +145,7 @@ const DiaryCard = ({
       
       <CardContent>
         <Link to={`/diary/${id}`}>
-          <p className="text-gray-600 whitespace-pre-wrap">{content}</p>
+          <p className="text-gray-600 font-serif whitespace-pre-wrap leading-relaxed">{content}</p>
         </Link>
       </CardContent>
       

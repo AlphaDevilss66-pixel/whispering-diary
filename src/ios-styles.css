@@ -49,6 +49,22 @@ body {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* Transparent diary card for Explore page */
+.diary-card-transparent {
+  background-color: transparent;
+  border-radius: var(--ios-border-radius);
+  transition: transform 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] .diary-card-transparent {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.diary-card-transparent:hover {
+  transform: translateY(-2px);
+}
+
 [data-theme='dark'] .diary-card {
   border-color: rgba(255, 255, 255, 0.1);
   background-color: #1c1c1e;

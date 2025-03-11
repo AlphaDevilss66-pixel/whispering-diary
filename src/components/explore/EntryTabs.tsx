@@ -25,7 +25,7 @@ const EntryTabs = ({
   const renderSkeletons = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {[...Array(4)].map((_, i) => (
-        <div key={i} className="diary-card p-6 animate-pulse space-y-3">
+        <div key={i} className="diary-card-transparent p-6 animate-pulse space-y-3">
           <div className="h-5 w-1/3 bg-muted rounded"></div>
           <div className="h-6 w-3/4 bg-muted rounded"></div>
           <div className="space-y-2">
@@ -80,7 +80,7 @@ const EntryTabs = ({
         ) : diaryEntries.length > 0 ? (
           <DiaryEntries entries={diaryEntries} onDelete={onDelete} />
         ) : (
-          <div className="text-center py-12 bg-muted rounded-2xl ios-card">
+          <div className="text-center py-12 bg-transparent border border-border rounded-2xl">
             <p className="text-muted-foreground">No diary entries found.</p>
             {selectedTag && (
               <Button 
