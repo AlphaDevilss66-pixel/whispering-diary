@@ -68,10 +68,12 @@ export const signOut = async (
   navigate: (path: string) => void
 ) => {
   try {
+    // First, clear the local state and storage
     setSession(null);
     setUser(null);
     localStorage.removeItem('supabase.auth.token');
 
+    // Then try to sign out from Supabase
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
@@ -83,12 +85,21 @@ export const signOut = async (
     } catch (signOutError) {
       console.error("Error during API signout:", signOutError);
     }
-
-    navigate("/");
+    
+    // Always show success message and navigate, even if API call fails
     toast.success("Successfully signed out");
+    
+    // Force navigation to root with a slight delay to ensure state is cleared
+    setTimeout(() => {
+      navigate("/");
+      window.location.href = "/";
+    }, 100);
   } catch (error: any) {
     console.error("Error during sign out process:", error);
-    navigate("/");
     toast.error("Error during sign out");
+    
+    // Still try to navigate on error
+    navigate("/");
+    window.location.href = "/";
   }
 };
