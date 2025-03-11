@@ -1,15 +1,15 @@
+
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, Filter, Hash, Flame, Calendar, Sparkles, X } from "lucide-react";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
 import DiaryCard from "@/components/diary/DiaryCard";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Clock, Heart, Zap, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 
 type DiaryEntry = {
   id: string;
@@ -17,99 +17,105 @@ type DiaryEntry = {
   content: string;
   created_at: string;
   is_private: boolean;
+  is_anonymous: boolean;
   likes: number;
   comments: number;
-  tags?: string[];
+  user_id: string;
 };
 
-const popularTags = [
-  "reflection", "growth", "vulnerability", "travel", 
-  "friendship", "healing", "courage", "mindfulness"
-];
+type Tag = {
+  name: string;
+  count: number;
+};
 
 const Explore = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<"recent" | "popular" | "trending">("recent");
-  const [entries, setEntries] = useState<DiaryEntry[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTag, setSelectedTag] = useState<string | null>(searchParams.get("tag"));
+  const [popularTags, setPopularTags] = useState<Tag[]>([]);
   
   useEffect(() => {
-    if (!user) {
-      navigate("/");
-      return;
-    }
-    
-    async function fetchPublicEntries() {
-      try {
-        setLoading(true);
-        console.log("Fetching public entries...");
-        const { data, error } = await supabase
-          .from('diary_entries')
-          .select('id, title, content, created_at, is_private, likes, comments')
-          .eq('is_private', false)
-          .order('created_at', { ascending: false });
-          
-        if (error) {
-          console.error("Supabase error:", error);
-          throw error;
-        }
-        
-        console.log("Public entries data:", data);
-        
-        const transformedEntries = (data as DiaryEntry[]).map(entry => ({
-          ...entry,
-          tags: popularTags.slice(0, Math.floor(Math.random() * 3) + 1)
-        }));
-        
-        setEntries(transformedEntries);
-      } catch (error) {
-        console.error("Error fetching public entries:", error);
-        toast.error("Failed to load public entries");
-      } finally {
-        setLoading(false);
+    fetchDiaryEntries();
+    fetchPopularTags();
+  }, [selectedTag]);
+
+  const fetchDiaryEntries = async () => {
+    try {
+      setLoading(true);
+      
+      let query = supabase
+        .from('diary_entries')
+        .select("*")
+        .eq('is_private', false)
+        .order('created_at', { ascending: false });
+      
+      // If there's a selected tag, filter by that tag
+      if (selectedTag) {
+        query = query.ilike('content', `%#${selectedTag}%`);
       }
-    }
-    
-    fetchPublicEntries();
-  }, [user, navigate]);
-  
-  const handleTagToggle = (tag: string) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter(t => t !== tag));
-    } else {
-      setSelectedTags([...selectedTags, tag]);
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      setDiaryEntries(data || []);
+    } catch (error) {
+      console.error("Error fetching diary entries:", error);
+    } finally {
+      setLoading(false);
     }
   };
-  
-  const filteredEntries = entries.filter(entry => {
-    const matchesSearch = 
-      entry.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      entry.content.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesTags = 
-      selectedTags.length === 0 || 
-      (entry.tags && selectedTags.some(tag => entry.tags?.includes(tag)));
-    
-    return matchesSearch && matchesTags;
-  });
-  
-  const sortedEntries = [...filteredEntries].sort((a, b) => {
-    switch (sortBy) {
-      case "recent":
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      case "popular":
-        return b.likes - a.likes;
-      case "trending":
-        const aScore = b.likes / ((Date.now() - new Date(a.created_at).getTime()) / 86400000);
-        const bScore = a.likes / ((Date.now() - new Date(b.created_at).getTime()) / 86400000);
-        return bScore - aScore;
-      default:
-        return 0;
+
+  // Extract all hashtags from diary entries and count their occurrences
+  const fetchPopularTags = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('diary_entries')
+        .select('content')
+        .eq('is_private', false);
+      
+      if (error) throw error;
+      
+      // Extract hashtags from all diary entries
+      const hashtagRegex = /#(\w+)/g;
+      const hashtags: Record<string, number> = {};
+      
+      data?.forEach(entry => {
+        const matches = entry.content.match(hashtagRegex) || [];
+        matches.forEach(match => {
+          const tag = match.substring(1);
+          hashtags[tag] = (hashtags[tag] || 0) + 1;
+        });
+      });
+      
+      // Convert to array and sort by count
+      const sortedTags = Object.entries(hashtags)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10); // Get top 10
+      
+      setPopularTags(sortedTags);
+    } catch (error) {
+      console.error("Error fetching popular tags:", error);
     }
-  });
+  };
+
+  const handleTagSelect = (tag: string | null) => {
+    setSelectedTag(tag);
+    
+    if (tag) {
+      setSearchParams({ tag });
+    } else {
+      setSearchParams({});
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Implement search functionality here
+  };
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -117,137 +123,206 @@ const Explore = () => {
       
       <main className="flex-1 pt-24 pb-16">
         <div className="page-container">
-          <div className="mb-8">
-            <h1 className="text-3xl font-serif font-semibold">Explore Diaries</h1>
-            <p className="text-gray-600">Discover anonymous stories and experiences from around the world</p>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+              <h1 className="text-3xl font-serif font-semibold">Explore</h1>
+              <p className="text-gray-600">Discover diary entries from the community</p>
+            </div>
+            
+            <form onSubmit={handleSearch} className="w-full md:w-auto">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                <Input
+                  type="search"
+                  placeholder="Search diary entries"
+                  className="pl-10 pr-12 rounded-full border-gray-200 w-full md:w-[300px]"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <Button 
+                  type="submit" 
+                  size="sm" 
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 rounded-full h-7 px-3"
+                >
+                  Search
+                </Button>
+              </div>
+            </form>
           </div>
           
           <div className="flex flex-col lg:flex-row gap-8">
-            <div className="w-full lg:w-64 glass-card p-6 h-fit sticky top-24">
-              <div className="mb-6">
-                <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                  <Filter className="h-4 w-4" /> Filters
-                </h3>
-                <div className="relative mb-4">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search entries..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
-              <div className="mb-6">
-                <h4 className="text-sm font-medium mb-3">Sort By</h4>
-                <div className="space-y-2">
-                  <Button
-                    variant={sortBy === "recent" ? "default" : "ghost"}
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={() => setSortBy("recent")}
-                  >
-                    <Clock className="h-4 w-4 mr-2" /> Recent
-                  </Button>
-                  <Button
-                    variant={sortBy === "popular" ? "default" : "ghost"}
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={() => setSortBy("popular")}
-                  >
-                    <Heart className="h-4 w-4 mr-2" /> Popular
-                  </Button>
-                  <Button
-                    variant={sortBy === "trending" ? "default" : "ghost"}
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={() => setSortBy("trending")}
-                  >
-                    <TrendingUp className="h-4 w-4 mr-2" /> Trending
-                  </Button>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium mb-3">Popular Tags</h4>
-                <div className="flex flex-wrap gap-2">
-                  {popularTags.map(tag => (
-                    <Badge
-                      key={tag}
-                      variant={selectedTags.includes(tag) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => handleTagToggle(tag)}
-                    >
-                      {tag}
+            <div className="w-full lg:w-2/3">
+              <Tabs defaultValue="trending" className="w-full ios-tabs mb-6">
+                <TabsList className="mb-4 ios-tabs-list rounded-xl">
+                  <TabsTrigger value="trending" className="ios-tab">
+                    <Flame className="h-4 w-4 mr-2" />
+                    <span>Trending</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="latest" className="ios-tab">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    <span>Latest</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="popular" className="ios-tab">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    <span>Popular</span>
+                  </TabsTrigger>
+                </TabsList>
+                
+                {selectedTag && (
+                  <div className="mb-4 flex items-center">
+                    <Badge variant="secondary" className="px-3 py-1">
+                      <Hash className="h-4 w-4 mr-1" />
+                      {selectedTag}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-4 w-4 ml-2 hover:bg-transparent"
+                        onClick={() => handleTagSelect(null)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
                     </Badge>
-                  ))}
-                </div>
-              </div>
+                    <span className="text-sm text-gray-500 ml-2">
+                      Showing entries with tag #{selectedTag}
+                    </span>
+                  </div>
+                )}
+                
+                <TabsContent value="trending" className="mt-0">
+                  {loading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {[...Array(4)].map((_, i) => (
+                        <div key={i} className="diary-card p-6 animate-pulse space-y-3">
+                          <div className="h-5 w-1/3 bg-gray-200 rounded"></div>
+                          <div className="h-6 w-3/4 bg-gray-200 rounded"></div>
+                          <div className="space-y-2">
+                            <div className="h-4 bg-gray-200 rounded"></div>
+                            <div className="h-4 bg-gray-200 rounded"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : diaryEntries.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {diaryEntries.map(entry => (
+                        <DiaryCard
+                          key={entry.id}
+                          id={entry.id}
+                          title={entry.title}
+                          content={entry.content}
+                          date={entry.created_at}
+                          likes={entry.likes}
+                          comments={entry.comments}
+                          isPrivate={entry.is_private}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 bg-gray-50 rounded-2xl ios-card">
+                      <p className="text-gray-500">No diary entries found.</p>
+                      {selectedTag && (
+                        <Button 
+                          variant="link" 
+                          onClick={() => handleTagSelect(null)}
+                          className="mt-2"
+                        >
+                          Clear tag filter
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="latest" className="mt-0">
+                  {/* Same content as trending but sorted by date */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {!loading && diaryEntries.map(entry => (
+                      <DiaryCard
+                        key={entry.id}
+                        id={entry.id}
+                        title={entry.title}
+                        content={entry.content}
+                        date={entry.created_at}
+                        likes={entry.likes}
+                        comments={entry.comments}
+                        isPrivate={entry.is_private}
+                      />
+                    ))}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="popular" className="mt-0">
+                  {/* Same content as trending but sorted by likes */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {!loading && 
+                      [...diaryEntries]
+                        .sort((a, b) => b.likes - a.likes)
+                        .map(entry => (
+                          <DiaryCard
+                            key={entry.id}
+                            id={entry.id}
+                            title={entry.title}
+                            content={entry.content}
+                            date={entry.created_at}
+                            likes={entry.likes}
+                            comments={entry.comments}
+                            isPrivate={entry.is_private}
+                          />
+                        ))
+                    }
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
             
-            <div className="flex-1">
-              <div className="mb-6 flex items-center justify-between">
-                <h3 className="text-lg font-medium flex items-center gap-2">
-                  {sortBy === "recent" && <Clock className="h-4 w-4" />}
-                  {sortBy === "popular" && <Heart className="h-4 w-4" />}
-                  {sortBy === "trending" && <Zap className="h-4 w-4" />}
-                  {sortBy === "recent" && "Recent Entries"}
-                  {sortBy === "popular" && "Popular Entries"}
-                  {sortBy === "trending" && "Trending Entries"}
+            <div className="w-full lg:w-1/3 space-y-6">
+              <div className="ios-card p-6">
+                <h3 className="text-lg font-medium mb-4 flex items-center">
+                  <Hash className="h-4 w-4 mr-2" />
+                  Popular Tags
                 </h3>
-                <span className="text-sm text-gray-500">{sortedEntries.length} entries</span>
+                
+                {popularTags.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {popularTags.map((tag, index) => (
+                      <Badge 
+                        key={index} 
+                        variant={selectedTag === tag.name ? "default" : "secondary"}
+                        className="cursor-pointer"
+                        onClick={() => handleTagSelect(tag.name)}
+                      >
+                        #{tag.name}
+                        <span className="ml-1 text-xs opacity-70">({tag.count})</span>
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No tags found.</p>
+                )}
               </div>
               
-              {selectedTags.length > 0 && (
-                <div className="mb-6 flex items-center gap-2 flex-wrap">
-                  <span className="text-sm text-gray-500">Filtered by:</span>
-                  {selectedTags.map(tag => (
-                    <Badge
-                      key={tag}
-                      variant="default"
-                      className="cursor-pointer"
-                      onClick={() => handleTagToggle(tag)}
-                    >
-                      {tag} ×
-                    </Badge>
-                  ))}
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="text-xs h-auto p-0"
-                    onClick={() => setSelectedTags([])}
-                  >
-                    Clear all
+              <div className="ios-card p-6">
+                <h3 className="text-lg font-medium mb-4 flex items-center">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filters
+                </h3>
+                
+                {/* More filters could be added here */}
+                <div className="space-y-3">
+                  <Button variant="outline" className="w-full justify-start">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    This week
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Flame className="h-4 w-4 mr-2" />
+                    Most liked
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Featured
                   </Button>
                 </div>
-              )}
-              
-              {loading ? (
-                <div className="text-center py-12">Loading entries...</div>
-              ) : sortedEntries.length > 0 ? (
-                <div className="grid md:grid-cols-2 gap-6">
-                  {sortedEntries.map((entry) => (
-                    <DiaryCard
-                      key={entry.id}
-                      id={entry.id}
-                      title={entry.title}
-                      content={entry.content}
-                      date={entry.created_at}
-                      likes={entry.likes}
-                      comments={entry.comments}
-                      isPrivate={entry.is_private}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 glass-card">
-                  <h3 className="text-xl font-medium mb-2">No entries found</h3>
-                  <p className="text-gray-500">
-                    Try adjusting your search or filters
-                  </p>
-                </div>
-              )}
+              </div>
             </div>
           </div>
         </div>

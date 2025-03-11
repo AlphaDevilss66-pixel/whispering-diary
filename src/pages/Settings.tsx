@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -27,13 +28,11 @@ import {
   Bell, 
   Shield, 
   LogOut, 
-  Camera,
   Moon,
   Trash2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
-import { supabase } from "@/integrations/supabase/client";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
 
@@ -60,6 +59,10 @@ const Settings = () => {
     if (user) {
       setEmail(user.email || "");
     }
+
+    // Check for dark mode setting
+    const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+    setDarkMode(isDarkMode);
   }, [profile, user]);
   
   const handleUpdateProfile = async () => {
@@ -93,6 +96,12 @@ const Settings = () => {
       console.error("Error signing out:", error);
       toast.error("Failed to sign out");
     }
+  };
+
+  const toggleDarkMode = (checked: boolean) => {
+    setDarkMode(checked);
+    document.documentElement.setAttribute('data-theme', checked ? 'dark' : 'light');
+    localStorage.setItem('theme', checked ? 'dark' : 'light');
   };
   
   const getInitials = (name: string) => {
@@ -146,20 +155,13 @@ const Settings = () => {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex flex-col sm:flex-row items-center gap-6">
-                    <div className="relative">
+                    <div>
                       <Avatar className="h-24 w-24">
                         <AvatarImage src={profile?.avatar_url || ""} />
                         <AvatarFallback className="text-lg bg-primary/10 text-primary">
                           {getInitials(profile?.full_name || "")}
                         </AvatarFallback>
                       </Avatar>
-                      <Button 
-                        size="icon" 
-                        variant="secondary" 
-                        className="absolute bottom-0 right-0 h-8 w-8 rounded-full shadow-md"
-                      >
-                        <Camera className="h-4 w-4" />
-                      </Button>
                     </div>
                     <div className="space-y-1 text-center sm:text-left">
                       <h3 className="font-medium text-lg">{profile?.full_name || "Your Name"}</h3>
@@ -240,7 +242,7 @@ const Settings = () => {
                       </div>
                       <Switch
                         checked={darkMode}
-                        onCheckedChange={setDarkMode}
+                        onCheckedChange={toggleDarkMode}
                       />
                     </div>
                   </div>

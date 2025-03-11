@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Hash } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 type Comment = {
   id: string;
@@ -34,6 +37,7 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const { profile } = useProfile();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchComments();
@@ -45,7 +49,7 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
     try {
       setIsLoading(true);
       
-      // First, fetch all comments for this diary entry
+      // Fetch all comments for this diary entry
       const { data: commentsData, error: commentsError } = await supabase
         .from("diary_comments")
         .select("*")
@@ -54,7 +58,7 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
 
       if (commentsError) throw commentsError;
       
-      // Then, for each comment, fetch the user profile
+      // For each comment, fetch the user profile separately
       const commentsWithProfiles = await Promise.all(
         commentsData.map(async (comment) => {
           const { data: profileData, error: profileError } = await supabase
@@ -116,8 +120,9 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
         }
       };
       
-      setComments([...comments, newCommentWithUser as Comment]);
-      updateCommentCount(comments.length + 1);
+      const updatedComments = [...comments, newCommentWithUser as Comment];
+      setComments(updatedComments);
+      updateCommentCount(updatedComments.length);
       setNewComment("");
       toast.success("Comment added successfully");
     } catch (error) {
@@ -126,6 +131,39 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Extract hashtags from text
+  const extractHashtags = (text: string) => {
+    const regex = /#(\w+)/g;
+    const matches = text.match(regex) || [];
+    return matches.map(tag => tag.substring(1));
+  };
+
+  // Handle tag click
+  const handleTagClick = (tag: string) => {
+    navigate(`/explore?tag=${tag}`);
+  };
+
+  // Render content with clickable hashtags
+  const renderContentWithHashtags = (text: string) => {
+    const parts = text.split(/(#\w+)/g);
+    
+    return parts.map((part, index) => {
+      if (part.startsWith('#')) {
+        const tag = part.substring(1);
+        return (
+          <span 
+            key={index} 
+            className="text-primary cursor-pointer font-medium"
+            onClick={() => handleTagClick(tag)}
+          >
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
   };
 
   const getInitials = (name: string) => {
@@ -153,7 +191,7 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
           </Avatar>
           <div className="flex-1 space-y-2">
             <Textarea
-              placeholder="Add a comment..."
+              placeholder="Add a comment... (use #hashtags to categorize)"
               value={newComment}
               onChange={e => setNewComment(e.target.value)}
               className="ios-input min-h-[100px] rounded-xl bg-gray-50 border-gray-200"
@@ -180,25 +218,45 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
             No comments yet. Be the first to comment!
           </div>
         ) : (
-          comments.map(comment => (
-            <div key={comment.id} className="flex gap-4">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={comment.user?.avatar_url || ""} />
-                <AvatarFallback className="bg-primary/10 text-primary">
-                  {getInitials(comment.user?.full_name || "")}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <div className="flex items-baseline gap-2">
-                  <span className="font-medium">{comment.user?.username || "Anonymous"}</span>
-                  <span className="text-xs text-gray-500">
-                    {format(new Date(comment.created_at), "MMM d, yyyy 'at' h:mm a")}
-                  </span>
+          comments.map(comment => {
+            const hashtags = extractHashtags(comment.content);
+            
+            return (
+              <div key={comment.id} className="flex gap-4">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={comment.user?.avatar_url || ""} />
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {getInitials(comment.user?.full_name || "")}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-medium">{comment.user?.username || "Anonymous"}</span>
+                    <span className="text-xs text-gray-500">
+                      {format(new Date(comment.created_at), "MMM d, yyyy 'at' h:mm a")}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-gray-700">{renderContentWithHashtags(comment.content)}</p>
+                  
+                  {hashtags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {hashtags.map((tag, index) => (
+                        <Badge 
+                          key={index} 
+                          variant="secondary" 
+                          className="text-xs cursor-pointer"
+                          onClick={() => handleTagClick(tag)}
+                        >
+                          <Hash className="h-3 w-3 mr-1" />
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <p className="mt-1 text-gray-700">{comment.content}</p>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

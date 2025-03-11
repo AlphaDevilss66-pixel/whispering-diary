@@ -1,7 +1,7 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Heart, MessageSquare, Share2, Clock, Lock, Globe } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Heart, MessageSquare, Share2, Clock, Lock, Globe, Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DiaryCardProps {
   id: string;
@@ -36,17 +37,35 @@ const DiaryCard = ({
 }: DiaryCardProps) => {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(likes);
+  const [commentCount, setCommentCount] = useState(comments);
+  const navigate = useNavigate();
   
-  const handleLike = (e: React.MouseEvent) => {
+  const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (liked) {
-      setLikeCount(prev => prev - 1);
-    } else {
-      setLikeCount(prev => prev + 1);
+    const newLikeStatus = !liked;
+    const newLikeCount = newLikeStatus ? likeCount + 1 : likeCount - 1;
+    
+    setLiked(newLikeStatus);
+    setLikeCount(newLikeCount);
+    
+    try {
+      // Update like count in the database
+      const { error } = await supabase
+        .from("diary_entries")
+        .update({ likes: newLikeCount })
+        .eq("id", id);
+        
+      if (error) throw error;
+      
+    } catch (error) {
+      console.error("Error updating like count:", error);
+      // Revert the UI if there was an error
+      setLiked(!newLikeStatus);
+      setLikeCount(liked ? likeCount + 1 : likeCount - 1);
+      toast.error("Failed to update like count");
     }
-    setLiked(!liked);
   };
 
   const handleShare = async (platform: string) => {
@@ -89,6 +108,19 @@ const DiaryCard = ({
     }
   };
 
+  // Extract hashtags from content
+  const extractHashtags = (text: string) => {
+    const regex = /#(\w+)/g;
+    const matches = text.match(regex) || [];
+    return matches.map(tag => tag.substring(1));
+  };
+
+  const handleTagClick = (tag: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(`/explore?tag=${tag}`);
+  };
+
   // Format the date for display
   const formattedDate = new Date(date).toLocaleDateString('en-US', {
     month: 'short',
@@ -96,10 +128,34 @@ const DiaryCard = ({
     year: 'numeric'
   });
   
+  // Render content with clickable hashtags
+  const renderContentWithHashtags = (text: string) => {
+    const parts = text.split(/(#\w+)/g);
+    
+    return parts.map((part, index) => {
+      if (part.startsWith('#')) {
+        const tag = part.substring(1);
+        return (
+          <span 
+            key={index} 
+            className="text-primary cursor-pointer font-medium"
+            onClick={(e) => handleTagClick(tag, e)}
+          >
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+  
   // Truncate content if too long
   const truncatedContent = content.length > 150 
     ? content.substring(0, 150) + '...' 
     : content;
+  
+  // Extract hashtags for display
+  const hashtags = extractHashtags(content);
   
   return (
     <div className={cn("diary-card p-6 flex flex-col", className)}>
@@ -128,7 +184,25 @@ const DiaryCard = ({
         <h3 className="text-xl font-serif font-medium mb-2 group-hover:text-primary transition-colors">
           {title}
         </h3>
-        <p className="text-gray-600 text-sm mb-4">{truncatedContent}</p>
+        <p className="text-gray-600 text-sm mb-4">
+          {renderContentWithHashtags(truncatedContent)}
+        </p>
+        
+        {hashtags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-4">
+            {hashtags.map((tag, index) => (
+              <Badge 
+                key={index} 
+                variant="secondary" 
+                className="text-xs cursor-pointer"
+                onClick={(e) => handleTagClick(tag, e)}
+              >
+                <Hash className="h-3 w-3 mr-1" />
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
       </Link>
       
       <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
@@ -150,7 +224,7 @@ const DiaryCard = ({
           >
             <Link to={`/diary/${id}#comments`}>
               <MessageSquare className="h-4 w-4 mr-1" />
-              <span className="text-xs">{comments}</span>
+              <span className="text-xs">{commentCount}</span>
             </Link>
           </Button>
         </div>
