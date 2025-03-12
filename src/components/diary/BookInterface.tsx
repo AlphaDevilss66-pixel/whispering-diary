@@ -113,10 +113,10 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
   }));
   
   // Drag gesture for page turning
-  const bind = useDrag(({ down, movement: [mx], ...rest }) => {
+  const bind = useDrag(({ movement: [mx], active }) => {
     if (!allowDrag || isFlipping) return;
     
-    if (down && Math.abs(mx) > 50) {
+    if (active && Math.abs(mx) > 50) {
       if (mx > 0 && currentPage > 0) {
         prevPage();
       } else if (mx < 0 && currentPage < totalPages - 1) {

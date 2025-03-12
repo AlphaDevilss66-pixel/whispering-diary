@@ -37,7 +37,7 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
       // Transform the data to match our Comment type with optional user
       const typedComments = commentsData.map((comment: any) => ({
         ...comment,
-        user: comment.profiles || null
+        user: comment.profiles || undefined
       })) as Comment[];
       
       setComments(typedComments);
