@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 import { useSprings, animated, useSpring } from '@react-spring/web';
@@ -107,8 +106,7 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
     config: { mass: 5, tension: 500, friction: 80 },
   }));
   
-  // Fixed drag handling to return proper gesture handlers
-  const dragHandlers = useDrag(({ movement: [mx], active }) => {
+  const bind = useDrag(({ movement: [mx], active }) => {
     if (!allowDrag || isFlipping) return;
     
     if (active && Math.abs(mx) > 50) {
@@ -127,10 +125,7 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
   
   return (
     <div className={cn("relative w-full h-full flex items-center justify-center perspective-1000", className)}>
-      <div 
-        ref={bookRef}
-        className="relative w-full max-w-2xl aspect-[3/4] book-shadow"
-      >
+      <div ref={bookRef} className="relative w-full max-w-2xl aspect-[3/4] book-shadow">
         <AnimatedDiv
           style={{
             ...coverSpring,
@@ -192,7 +187,7 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
         {props.map((style, index) => (
           <AnimatedDiv
             key={index}
-            {...dragHandlers()}
+            {...bind()}
             style={{
               ...style,
               transformStyle: 'preserve-3d',
