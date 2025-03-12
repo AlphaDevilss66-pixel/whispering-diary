@@ -24,10 +24,24 @@ export function useProfile() {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle(); // Changed from .single() to .maybeSingle()
 
       if (error) throw error;
-      setProfile(data);
+      
+      // If no profile exists, create one
+      if (!data) {
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert([{ id: user.id }])
+          .select()
+          .single();
+          
+        if (insertError) throw insertError;
+        setProfile(newProfile);
+      } else {
+        setProfile(data);
+      }
+      
     } catch (error) {
       console.error("Error fetching profile:", error);
       setError(error as Error);
