@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 import { useSprings, animated, useSpring } from '@react-spring/web';
@@ -203,13 +204,11 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
         
         {/* Pages */}
         {props.map((style, index) => {
-          // Call bind() once and store the result
-          const bindProps = bind();
-          
+          // Use the bind function directly in the JSX
           return (
             <AnimatedDiv
               key={index}
-              {...bindProps}
+              {...bind()}
               style={{
                 ...style,
                 transformStyle: 'preserve-3d',

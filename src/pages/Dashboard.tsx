@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
-import BookInterface from "@/components/diary/BookInterface";
 import DiaryCard from "@/components/diary/DiaryCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -98,78 +97,87 @@ const Dashboard = () => {
     <div className="min-h-screen flex flex-col">
       <NavBar />
       
-      <main className="flex-1 pt-16 pb-20">
-        <div className="h-[calc(100vh-120px)] relative">
-          {/* Book interface for personal entries */}
-          <div className="h-full relative">
-            <BookInterface 
-              entries={filteredDiaries}
-              onNewEntry={fetchDiaryEntries}
-              onDeleteEntry={handleDeleteEntry}
+      <main className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold">My Diary</h1>
+          <Button className="flex items-center gap-2" onClick={() => window.location.href = "/create-entry"}>
+            <PlusCircle className="h-4 w-4" />
+            New Entry
+          </Button>
+        </div>
+        
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search entries..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
             />
-            
-            {/* Search overlay */}
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 w-64">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search entries..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white/80 dark:bg-black/50 backdrop-blur-md border-0 shadow-lg"
-                />
-              </div>
-            </div>
-            
-            {/* Toggle for public entries */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={togglePublicEntries}
-              className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 gap-2 bg-white/80 dark:bg-black/50 backdrop-blur-md shadow-lg"
-            >
-              {showPublicEntries ? (
-                <>
-                  <ArrowUp className="h-4 w-4" />
-                  <span>Hide Public Entries</span>
-                </>
-              ) : (
-                <>
-                  <ArrowDown className="h-4 w-4" />
-                  <span>View Public Entries</span>
-                </>
-              )}
-            </Button>
-          </div>
-          
-          {/* Public entries drawer */}
-          <div className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-[#1c1c1e] transition-transform duration-500 transform ${showPublicEntries ? 'translate-y-0' : 'translate-y-full'} h-[70vh] z-20 rounded-t-3xl shadow-[0_-10px_30px_rgba(0,0,0,0.1)] overflow-hidden`}>
-            <div className="h-2 w-16 mx-auto bg-gray-300 dark:bg-gray-700 rounded-full my-3"></div>
-            
-            <div className="p-6">
-              <h2 className="text-2xl font-serif font-medium mb-4">Community Diary Entries</h2>
-              <p className="text-gray-500 mb-6">Discover entries shared by others</p>
-              
-              <div className="overflow-auto max-h-[calc(70vh-120px)] pr-2">
-                <div className="grid gap-6">
-                  {publicEntries.map(entry => (
-                    <DiaryCard
-                      key={entry.id}
-                      id={entry.id}
-                      title={entry.title}
-                      content={entry.content}
-                      date={entry.created_at}
-                      likes={entry.likes}
-                      comments={entry.comments}
-                      isPrivate={false}
-                      onDelete={() => {}}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
+        
+        <Tabs defaultValue="personal" className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="personal" className="flex items-center gap-1">
+              <BookOpen className="h-4 w-4" />
+              My Entries
+            </TabsTrigger>
+            <TabsTrigger value="public" className="flex items-center gap-1">
+              <Filter className="h-4 w-4" />
+              Public Entries
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="personal">
+            {loading ? (
+              <div className="text-center py-12">Loading your entries...</div>
+            ) : filteredDiaries.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {filteredDiaries.map(entry => (
+                  <DiaryCard
+                    key={entry.id}
+                    id={entry.id}
+                    title={entry.title}
+                    content={entry.content}
+                    date={entry.created_at}
+                    likes={entry.likes}
+                    comments={entry.comments}
+                    isPrivate={entry.is_private}
+                    onDelete={handleDeleteEntry}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <h3 className="text-xl font-medium mb-2">No entries found</h3>
+                <p className="text-gray-500 mb-6">Start writing your first diary entry</p>
+                <Button onClick={() => window.location.href = "/create-entry"}>
+                  Create Your First Entry
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="public">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {publicEntries.map(entry => (
+                <DiaryCard
+                  key={entry.id}
+                  id={entry.id}
+                  title={entry.title}
+                  content={entry.content}
+                  date={entry.created_at}
+                  likes={entry.likes}
+                  comments={entry.comments}
+                  isPrivate={false}
+                  onDelete={() => {}}
+                />
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
       
       <Footer />
