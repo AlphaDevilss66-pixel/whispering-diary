@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 import { useSprings, animated, useSpring } from '@react-spring/web';
@@ -39,14 +38,12 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
   
   const totalPages = pages.length;
   
-  // Handle page change
   useEffect(() => {
     if (onPageChange) {
       onPageChange(currentPage);
     }
   }, [currentPage, onPageChange]);
   
-  // Book opening animation
   const openBook = async () => {
     if (isOpen) return;
     
@@ -57,7 +54,6 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
     });
   };
   
-  // Book closing animation
   const closeBook = async () => {
     if (!isOpen) return;
     
@@ -69,14 +65,12 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
     setCurrentPage(0);
   };
   
-  // Page turning logic
   const goToPage = (pageIndex: number) => {
     if (pageIndex < 0 || pageIndex >= totalPages || isFlipping) return;
     
     setIsFlipping(true);
     setCurrentPage(pageIndex);
     
-    // Prevent rapid page turns
     setTimeout(() => {
       setIsFlipping(false);
     }, 500);
@@ -94,7 +88,6 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
     }
   };
   
-  // Spring animation for pages
   const [props, api] = useSprings(totalPages, (index) => ({
     from: {
       rotateY: 0,
@@ -113,9 +106,8 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
     config: { mass: 5, tension: 500, friction: 80 },
   }));
   
-  // Drag gesture for page turning - fixing the function type issue
   const bindDrag = () => {
-    return useDrag(({ movement: [mx], active }) => {
+    const dragGesture = useDrag(({ movement: [mx], active }) => {
       if (!allowDrag || isFlipping) return;
       
       if (active && Math.abs(mx) > 50) {
@@ -126,9 +118,10 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
         }
       }
     });
+    
+    return typeof dragGesture === 'function' ? dragGesture() : {};
   };
   
-  // Cover animation
   const coverSpring = useSpring({
     rotateY: isOpen ? 180 : 0,
     config: { mass: 5, tension: 500, friction: 80 }
@@ -136,12 +129,10 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
   
   return (
     <div className={cn("relative w-full h-full flex items-center justify-center perspective-1000", className)}>
-      {/* Book container */}
       <div 
         ref={bookRef}
         className="relative w-full max-w-2xl aspect-[3/4] book-shadow"
       >
-        {/* Cover */}
         <AnimatedDiv
           style={{
             ...coverSpring,
@@ -158,7 +149,6 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
           onClick={() => isOpen ? closeBook() : openBook()}
           className="cursor-pointer"
         >
-          {/* Front cover */}
           <div 
             style={{
               position: 'absolute',
@@ -180,7 +170,6 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
             <div className="mt-8 text-sm opacity-70">Click to open</div>
           </div>
           
-          {/* Back of cover */}
           <div 
             style={{
               position: 'absolute',
@@ -202,7 +191,6 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
           </div>
         </AnimatedDiv>
         
-        {/* Pages */}
         {props.map((style, index) => {
           const dragHandlers = bindDrag();
           return (
@@ -220,7 +208,6 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
                 display: isOpen ? 'block' : 'none',
               }}
             >
-              {/* Front of page */}
               <div
                 style={{
                   position: 'absolute',
@@ -236,7 +223,6 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
                 {pages[index]}
               </div>
               
-              {/* Back of page */}
               <div
                 style={{
                   position: 'absolute',
@@ -261,7 +247,6 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
         })}
       </div>
       
-      {/* Navigation controls */}
       {showControls && isOpen && (
         <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-8">
           <button
@@ -290,7 +275,6 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
         </div>
       )}
       
-      {/* Close button when book is open */}
       {isOpen && (
         <button
           onClick={closeBook}
