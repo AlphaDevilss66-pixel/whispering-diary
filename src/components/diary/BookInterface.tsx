@@ -106,21 +106,18 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
     config: { mass: 5, tension: 500, friction: 80 },
   }));
   
-  const bindDrag = () => {
-    const dragGesture = useDrag(({ movement: [mx], active }) => {
-      if (!allowDrag || isFlipping) return;
-      
-      if (active && Math.abs(mx) > 50) {
-        if (mx > 0 && currentPage > 0) {
-          prevPage();
-        } else if (mx < 0 && currentPage < totalPages - 1) {
-          nextPage();
-        }
-      }
-    });
+  // Fixed bindDrag function to properly return drag handlers
+  const bindDrag = useDrag(({ movement: [mx], active }) => {
+    if (!allowDrag || isFlipping) return;
     
-    return dragGesture();
-  };
+    if (active && Math.abs(mx) > 50) {
+      if (mx > 0 && currentPage > 0) {
+        prevPage();
+      } else if (mx < 0 && currentPage < totalPages - 1) {
+        nextPage();
+      }
+    }
+  });
   
   const coverSpring = useSpring({
     rotateY: isOpen ? 180 : 0,
