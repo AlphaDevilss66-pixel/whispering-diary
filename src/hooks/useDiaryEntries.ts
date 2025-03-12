@@ -1,19 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-export type DiaryEntry = {
-  id: string;
-  title: string;
-  content: string;
-  created_at: string;
-  is_private: boolean;
-  is_anonymous: boolean;
-  likes: number;
-  comments: number;
-  user_id: string;
-};
+import { DiaryEntry } from "@/types/database";
 
 type UseDiaryEntriesOptions = {
   selectedTag?: string | null;
@@ -27,51 +15,42 @@ export const useDiaryEntries = (options: UseDiaryEntriesOptions = {}) => {
   const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDiaryEntries();
-  }, [selectedTag, userId, publicOnly]);
-
   const fetchDiaryEntries = async () => {
     try {
       setLoading(true);
-      
       let query = supabase
         .from('diary_entries')
-        .select("*")
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(limit);
       
-      // Filter by user ID if provided
       if (userId) {
         query = query.eq('user_id', userId);
       }
       
-      // Filter by public/private status
       if (publicOnly) {
         query = query.eq('is_private', false);
       }
       
-      // Filter by tag if provided
       if (selectedTag) {
         query = query.ilike('content', `%#${selectedTag}%`);
       }
       
       const { data, error } = await query;
       
-      if (error) {
-        console.error("Error fetching diary entries:", error);
-        toast.error("Failed to load diary entries");
-        return;
-      }
-      
+      if (error) throw error;
       setDiaryEntries(data || []);
     } catch (error) {
       console.error("Error fetching diary entries:", error);
-      toast.error("Something went wrong while loading diary entries");
+      toast.error("Failed to load diary entries");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchDiaryEntries();
+  }, [selectedTag, userId, publicOnly]);
 
   const handleSearch = (searchTerm: string) => {
     if (!searchTerm.trim()) {

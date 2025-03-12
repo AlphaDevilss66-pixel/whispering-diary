@@ -3,16 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-export type Profile = {
-  id: string;
-  username: string | null;
-  full_name: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-  created_at: string;
-  updated_at: string;
-};
+import { Profile } from "@/types/database";
 
 export function useProfile() {
   const { user } = useAuth();
@@ -30,16 +21,13 @@ export function useProfile() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
         .single();
 
-      if (error) {
-        throw error;
-      }
-
-      setProfile(data as Profile);
+      if (error) throw error;
+      setProfile(data);
     } catch (error) {
       console.error("Error fetching profile:", error);
       setError(error as Error);
@@ -58,16 +46,13 @@ export function useProfile() {
 
     try {
       const { error } = await supabase
-        .from("profiles")
+        .from('profiles')
         .update(updates)
-        .eq("id", user.id);
+        .eq('id', user.id);
 
       if (error) throw error;
 
-      // Update local state
       setProfile(prev => prev ? { ...prev, ...updates } : null);
-      
-      // Refetch to ensure we have the latest data
       await fetchProfile();
       
       return { success: true };

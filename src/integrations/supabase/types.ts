@@ -9,13 +9,148 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      diary_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          diary_entry_id: string
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          diary_entry_id: string
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          diary_entry_id?: string
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diary_comments_diary_entry_id_fkey"
+            columns: ["diary_entry_id"]
+            isOneToOne: false
+            referencedRelation: "diary_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      diary_entries: {
+        Row: {
+          comments: number | null
+          content: string
+          created_at: string | null
+          id: string
+          is_anonymous: boolean | null
+          is_private: boolean | null
+          likes: number | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          comments?: number | null
+          content: string
+          created_at?: string | null
+          id?: string
+          is_anonymous?: boolean | null
+          is_private?: boolean | null
+          likes?: number | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          comments?: number | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_anonymous?: boolean | null
+          is_private?: boolean | null
+          likes?: number | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      likes: {
+        Row: {
+          created_at: string | null
+          diary_entry_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          diary_entry_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          diary_entry_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "likes_diary_entry_id_fkey"
+            columns: ["diary_entry_id"]
+            isOneToOne: false
+            referencedRelation: "diary_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      enable_uuid_ossp_if_not_exists: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
