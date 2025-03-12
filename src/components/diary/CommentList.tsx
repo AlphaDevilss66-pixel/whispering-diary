@@ -1,19 +1,7 @@
 
 import { Loader2 } from "lucide-react";
 import CommentItem from "./CommentItem";
-
-type Comment = {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-  diary_entry_id: string;
-  user: {
-    username: string;
-    avatar_url: string;
-    full_name: string;
-  } | null;
-};
+import { Comment } from "@/types/database";
 
 interface CommentListProps {
   comments: Comment[];

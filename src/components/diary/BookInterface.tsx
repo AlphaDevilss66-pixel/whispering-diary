@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 import { useSprings, animated, useSpring } from '@react-spring/web';
@@ -112,8 +113,8 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
     config: { mass: 5, tension: 500, friction: 80 },
   }));
   
-  // Drag gesture for page turning
-  const bind = useDrag(({ movement: [mx], active }) => {
+  // Drag gesture for page turning - fixing the function type issue
+  const bindDrag = useDrag(({ movement: [mx], active }) => {
     if (!allowDrag || isFlipping) return;
     
     if (active && Math.abs(mx) > 50) {
@@ -201,11 +202,10 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
         
         {/* Pages */}
         {props.map((style, index) => {
-          // Use the bind function directly in the JSX
           return (
             <AnimatedDiv
               key={index}
-              {...bind()}
+              {...bindDrag()}
               style={{
                 ...style,
                 transformStyle: 'preserve-3d',

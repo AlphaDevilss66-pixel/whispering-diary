@@ -5,19 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Hash } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { Comment } from "@/types/database";
 
 type CommentItemProps = {
-  comment: {
-    id: string;
-    content: string;
-    created_at: string;
-    user_id: string;
-    user: {
-      username: string;
-      avatar_url: string;
-      full_name: string;
-    } | null;
-  };
+  comment: Comment;
 };
 
 const CommentItem = ({ comment }: CommentItemProps) => {
