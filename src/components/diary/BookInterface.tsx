@@ -119,7 +119,7 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
       }
     });
     
-    return typeof dragGesture === 'function' ? dragGesture() : {};
+    return dragGesture();
   };
   
   const coverSpring = useSpring({
