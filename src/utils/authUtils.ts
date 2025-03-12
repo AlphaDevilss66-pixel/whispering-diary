@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -9,7 +10,12 @@ export const signInWithEmail = async (email: string, password: string) => {
     });
     
     if (response.error) {
-      toast.error(response.error.message);
+      // Specific handling for email not confirmed error
+      if (response.error.message === "Email not confirmed") {
+        toast.error("Email non confermata. Per favore controlla la tua casella di posta e clicca sul link di conferma prima di accedere.");
+      } else {
+        toast.error(response.error.message);
+      }
     }
     
     return response;
@@ -32,7 +38,7 @@ export const signUpWithEmail = async (email: string, password: string) => {
     if (response.error) {
       toast.error(response.error.message);
     } else {
-      toast.success("Email di verifica inviata! Controlla la tua casella di posta.");
+      toast.success("Email di verifica inviata! Controlla la tua casella di posta e clicca sul link di conferma.");
     }
     
     return response;

@@ -61,10 +61,15 @@ const LoginForm = ({
       const { error } = await signInWithEmail(email, password);
       
       if (error) {
-        throw error;
+        // Check specifically for email not confirmed error
+        if (error.message === "Email not confirmed") {
+          setFormErrors("Email non confermata. Per favore controlla la tua casella di posta e clicca sul link di conferma.");
+        } else {
+          throw error;
+        }
+      } else {
+        onSuccess();
       }
-      
-      onSuccess();
     } catch (error: any) {
       console.error("Login error:", error);
       setFormErrors(error.message || "Accesso fallito");

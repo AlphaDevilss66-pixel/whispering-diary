@@ -1,243 +1,307 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, useAnimation, AnimatePresence } from 'framer-motion';
+import { useSprings, animated, useSpring } from '@react-spring/web';
+import { useDrag } from '@use-gesture/react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-import React, { useState, useRef, useEffect } from "react";
-import { useSprings, animated } from "@react-spring/web";
-import { useDrag } from "@use-gesture/react";
-import { DiaryEntry } from "@/hooks/useDiaryEntries";
-import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import DiaryForm from "./DiaryForm";
+const AnimatedDiv = animated(motion.div);
 
 interface BookInterfaceProps {
-  entries: DiaryEntry[];
-  onNewEntry: () => void;
-  onDeleteEntry: (id: string) => void;
+  pages: React.ReactNode[];
+  className?: string;
+  onPageChange?: (pageIndex: number) => void;
+  initialPage?: number;
+  showControls?: boolean;
+  allowDrag?: boolean;
+  coverImage?: string;
+  title?: string;
+  author?: string;
 }
 
-const BookInterface: React.FC<BookInterfaceProps> = ({ 
-  entries,
-  onNewEntry,
-  onDeleteEntry
+const BookInterface: React.FC<BookInterfaceProps> = ({
+  pages,
+  className,
+  onPageChange,
+  initialPage = 0,
+  showControls = true,
+  allowDrag = true,
+  coverImage,
+  title,
+  author
 }) => {
-  const [index, setIndex] = useState(0);
-  const [showForm, setShowForm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const bookRef = useRef<HTMLDivElement>(null);
+  const controls = useAnimation();
   
-  // Create springs for each page
-  const [props, api] = useSprings(entries.length || 1, i => ({
-    x: i < index ? -100 : i > index ? 100 : 0,
-    scale: i === index ? 1 : 0.8,
-    display: i < index - 1 || i > index + 1 ? 'none' : 'block',
-    opacity: i === index ? 1 : 0.5,
-    rotateY: i < index ? -15 : i > index ? 15 : 0,
-    config: { mass: 1, tension: 320, friction: 35 }
+  const totalPages = pages.length;
+  
+  // Handle page change
+  useEffect(() => {
+    if (onPageChange) {
+      onPageChange(currentPage);
+    }
+  }, [currentPage, onPageChange]);
+  
+  // Book opening animation
+  const openBook = async () => {
+    if (isOpen) return;
+    
+    setIsOpen(true);
+    await controls.start({
+      rotateY: 180,
+      transition: { duration: 1, ease: "easeInOut" }
+    });
+  };
+  
+  // Book closing animation
+  const closeBook = async () => {
+    if (!isOpen) return;
+    
+    await controls.start({
+      rotateY: 0,
+      transition: { duration: 1, ease: "easeInOut" }
+    });
+    setIsOpen(false);
+    setCurrentPage(0);
+  };
+  
+  // Page turning logic
+  const goToPage = (pageIndex: number) => {
+    if (pageIndex < 0 || pageIndex >= totalPages || isFlipping) return;
+    
+    setIsFlipping(true);
+    setCurrentPage(pageIndex);
+    
+    // Prevent rapid page turns
+    setTimeout(() => {
+      setIsFlipping(false);
+    }, 500);
+  };
+  
+  const nextPage = () => {
+    if (currentPage < totalPages - 1) {
+      goToPage(currentPage + 1);
+    }
+  };
+  
+  const prevPage = () => {
+    if (currentPage > 0) {
+      goToPage(currentPage - 1);
+    }
+  };
+  
+  // Spring animation for pages
+  const [props, api] = useSprings(totalPages, (index) => ({
+    from: {
+      rotateY: 0,
+      boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+      zIndex: totalPages - index,
+    },
+    to: {
+      rotateY: currentPage > index ? 180 : 0,
+      boxShadow: currentPage > index 
+        ? '0 5px 15px rgba(0,0,0,0.05)' 
+        : '0 10px 20px rgba(0,0,0,0.1)',
+      zIndex: currentPage > index 
+        ? index 
+        : totalPages - index,
+    },
+    config: { mass: 5, tension: 500, friction: 80 },
   }));
   
-  // Set up gesture handler for swipe with proper TypeScript typing
-  const bind = useDrag(({ active, movement: [mx], direction: [xDir], velocity: [vx] }) => {
-    const trigger = vx > 0.2;
-    const dir = xDir < 0 ? 1 : -1;
+  // Drag gesture for page turning
+  const bind = useDrag(({ active, movement: [mx], direction: [xDir], cancel }) => {
+    if (!allowDrag || isFlipping) return;
     
-    // If we're actively dragging and not at boundaries, move the page
-    if (active && ((dir === 1 && index < entries.length - 1) || (dir === -1 && index > 0))) {
-      api.start(i => {
-        if (i < index - 1 || i > index + 1) return { display: 'none' };
-        const isGone = active ? trigger : false;
-        
-        // Calculate x position based on drag
-        const x = isGone ? (200 + window.innerWidth) * dir : active ? mx : 0;
-        
-        // Calculate rotation and scale
-        const scale = active ? (1 - Math.abs(mx) / window.innerWidth / 2) : i === index ? 1 : 0.8;
-        const rotateY = active ? (mx / 10) : i < index ? -15 : i > index ? 15 : 0;
-        
-        return {
-          x,
-          scale,
-          rotateY,
-          display: 'block',
-          opacity: i === index ? 1 : 0.5,
-          config: { friction: 50, tension: active ? 800 : 500 }
-        };
-      });
-    } else if (!active && trigger) {
-      // If the user released with enough velocity, change page
-      const newIndex = index + (dir === 1 ? 1 : -1);
-      if (newIndex >= 0 && newIndex < entries.length) {
-        setIndex(newIndex);
+    if (active && Math.abs(mx) > 50) {
+      if (mx > 0 && currentPage > 0) {
+        cancel();
+        prevPage();
+      } else if (mx < 0 && currentPage < totalPages - 1) {
+        cancel();
+        nextPage();
       }
-      
-      // Animate all pages to their new positions
-      api.start(i => {
-        const newIdx = index + (dir === 1 ? 1 : -1);
-        if (i < newIdx - 1 || i > newIdx + 1) return { display: 'none' };
-        
-        return {
-          x: i < newIdx ? -100 : i > newIdx ? 100 : 0,
-          scale: i === newIdx ? 1 : 0.8,
-          rotateY: i < newIdx ? -15 : i > newIdx ? 15 : 0,
-          opacity: i === newIdx ? 1 : 0.5,
-          display: 'block',
-          config: { friction: 50, tension: 500 }
-        };
-      });
-    } else {
-      // Reset pages to their resting positions
-      api.start(i => {
-        if (i < index - 1 || i > index + 1) return { display: 'none' };
-        
-        return {
-          x: i < index ? -100 : i > index ? 100 : 0,
-          scale: i === index ? 1 : 0.8,
-          rotateY: i < index ? -15 : i > index ? 15 : 0,
-          opacity: i === index ? 1 : 0.5,
-          display: 'block',
-          config: { friction: 50, tension: 500 }
-        };
-      });
     }
   });
   
-  const goToNextPage = () => {
-    if (index < entries.length - 1) {
-      setIndex(index + 1);
-      api.start(i => {
-        if (i < index || i > index + 2) return { display: 'none' };
-        
-        return {
-          x: i < index + 1 ? -100 : i > index + 1 ? 100 : 0,
-          scale: i === index + 1 ? 1 : 0.8,
-          rotateY: i < index + 1 ? -15 : i > index + 1 ? 15 : 0,
-          opacity: i === index + 1 ? 1 : 0.5,
-          display: 'block',
-          config: { friction: 50, tension: 500 }
-        };
-      });
-    }
-  };
-  
-  const goToPrevPage = () => {
-    if (index > 0) {
-      setIndex(index - 1);
-      api.start(i => {
-        if (i < index - 2 || i > index) return { display: 'none' };
-        
-        return {
-          x: i < index - 1 ? -100 : i > index - 1 ? 100 : 0,
-          scale: i === index - 1 ? 1 : 0.8,
-          rotateY: i < index - 1 ? -15 : i > index - 1 ? 15 : 0,
-          opacity: i === index - 1 ? 1 : 0.5,
-          display: 'block',
-          config: { friction: 50, tension: 500 }
-        };
-      });
-    }
-  };
-  
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }).format(date);
-  };
-  
-  const toggleNewEntryForm = () => {
-    setShowForm(!showForm);
-  };
-  
-  // If there are no entries, show the form
-  useEffect(() => {
-    if (entries.length === 0) {
-      setShowForm(true);
-    }
-  }, [entries]);
-  
-  // Get the binding object to properly type it for React
-  const bindProps = bind();
+  // Cover animation
+  const coverSpring = useSpring({
+    rotateY: isOpen ? 180 : 0,
+    config: { mass: 5, tension: 500, friction: 80 }
+  });
   
   return (
-    <div className="book-container h-full w-full">
-      {/* Navigation buttons */}
-      {entries.length > 0 && (
-        <>
-          <button 
-            className={`swipe-indicator swipe-indicator-left ${index === 0 ? 'opacity-30' : 'opacity-80'}`}
-            onClick={goToPrevPage}
-            disabled={index === 0}
-          >
-            <ArrowLeft size={20} />
-          </button>
-          
-          <button 
-            className={`swipe-indicator swipe-indicator-right ${index === entries.length - 1 ? 'opacity-30' : 'opacity-80'}`}
-            onClick={goToNextPage}
-            disabled={index === entries.length - 1}
-          >
-            <ArrowRight size={20} />
-          </button>
-        </>
-      )}
-      
-      {/* New entry button */}
-      <div className="absolute top-4 right-4 z-10">
-        <Button 
-          variant="outline" 
-          size="icon" 
-          className="rounded-full w-12 h-12 bg-ios-primary text-white"
-          onClick={toggleNewEntryForm}
+    <div className={cn("relative w-full h-full flex items-center justify-center perspective-1000", className)}>
+      {/* Book container */}
+      <div 
+        ref={bookRef}
+        className="relative w-full max-w-2xl aspect-[3/4] book-shadow"
+      >
+        {/* Cover */}
+        <AnimatedDiv
+          style={{
+            ...coverSpring,
+            transformStyle: 'preserve-3d',
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            zIndex: isOpen ? 0 : totalPages + 1,
+            backgroundImage: coverImage ? `url(${coverImage})` : 'linear-gradient(145deg, #2c3e50, #34495e)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            borderRadius: '8px 0 0 8px',
+          }}
+          onClick={() => isOpen ? closeBook() : openBook()}
+          className="cursor-pointer"
         >
-          <Plus size={24} />
-        </Button>
+          {/* Front cover */}
+          <div 
+            style={{
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+              backfaceVisibility: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '2rem',
+              color: 'white',
+              textAlign: 'center',
+              borderRadius: '8px 0 0 8px',
+            }}
+          >
+            <h1 className="text-3xl font-bold mb-4">{title || "My Diary"}</h1>
+            {author && <p className="text-lg opacity-80">{author}</p>}
+            <div className="mt-8 text-sm opacity-70">Click to open</div>
+          </div>
+          
+          {/* Back of cover */}
+          <div 
+            style={{
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+              backfaceVisibility: 'hidden',
+              transform: 'rotateY(180deg)',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '0 8px 8px 0',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '2rem',
+            }}
+          >
+            <div className="text-center text-gray-500">
+              <p>First page</p>
+            </div>
+          </div>
+        </AnimatedDiv>
+        
+        {/* Pages */}
+        {props.map((style, index) => {
+          // Call bind() once and store the result
+          const bindProps = bind();
+          
+          return (
+            <AnimatedDiv
+              key={index}
+              {...bindProps}
+              style={{
+                ...style,
+                transformStyle: 'preserve-3d',
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                backgroundColor: '#fff',
+                borderRadius: '0 8px 8px 0',
+                display: isOpen ? 'block' : 'none',
+              }}
+            >
+              {/* Front of page */}
+              <div
+                style={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: '100%',
+                  backfaceVisibility: 'hidden',
+                  padding: '2rem',
+                  backgroundColor: '#fff',
+                  borderRadius: '0 8px 8px 0',
+                  overflowY: 'auto',
+                }}
+              >
+                {pages[index]}
+              </div>
+              
+              {/* Back of page */}
+              <div
+                style={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: '100%',
+                  backfaceVisibility: 'hidden',
+                  transform: 'rotateY(180deg)',
+                  padding: '2rem',
+                  backgroundColor: '#fff',
+                  borderRadius: '0 8px 8px 0',
+                  overflowY: 'auto',
+                }}
+              >
+                {index < totalPages - 1 ? pages[index + 1] : (
+                  <div className="flex h-full items-center justify-center text-gray-400">
+                    <p>End of diary</p>
+                  </div>
+                )}
+              </div>
+            </AnimatedDiv>
+          );
+        })}
       </div>
       
-      {/* Show new entry form if requested or if no entries */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-xl max-h-[90vh] overflow-auto rounded-xl">
-            <DiaryForm onComplete={() => {
-              setShowForm(false);
-              onNewEntry();
-            }} />
+      {/* Navigation controls */}
+      {showControls && isOpen && (
+        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-8">
+          <button
+            onClick={prevPage}
+            disabled={currentPage === 0 || isFlipping}
+            className={`p-2 rounded-full bg-white/80 shadow-md ${
+              currentPage === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white'
+            }`}
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          
+          <div className="bg-white/80 px-4 py-2 rounded-full shadow-md">
+            {currentPage + 1} / {totalPages}
           </div>
+          
+          <button
+            onClick={nextPage}
+            disabled={currentPage === totalPages - 1 || isFlipping}
+            className={`p-2 rounded-full bg-white/80 shadow-md ${
+              currentPage === totalPages - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white'
+            }`}
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
         </div>
       )}
       
-      {/* Render the book pages */}
-      {entries.length > 0 ? (
-        <div className="w-full h-full overflow-hidden">
-          {props.map(({ x, scale, display, opacity, rotateY }, i) => (
-            entries[i] && (
-              <animated.div
-                key={entries[i].id}
-                className="book-page absolute top-0 left-0 w-full h-full"
-                style={{
-                  display,
-                  opacity,
-                  transform: x.to(x => `translate3d(${x}%,0,0)`).to(
-                    (x) => `translate3d(${x}%,0,0) scale(${scale}) rotateY(${rotateY}deg)`
-                  ),
-                }}
-                {...bindProps}
-              >
-                <div className="book-page-content overflow-auto h-full">
-                  <div className="book-page-date">{formatDate(entries[i].created_at)}</div>
-                  <h2 className="book-page-title">{entries[i].title}</h2>
-                  <div className="book-page-body whitespace-pre-wrap">
-                    {entries[i].content}
-                  </div>
-                </div>
-              </animated.div>
-            )
-          ))}
-        </div>
-      ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <div className="text-center p-8">
-            <h2 className="text-2xl font-serif mb-4">Your diary is empty</h2>
-            <p className="text-gray-500 mb-6">Start writing your first entry</p>
-          </div>
-        </div>
+      {/* Close button when book is open */}
+      {isOpen && (
+        <button
+          onClick={closeBook}
+          className="absolute top-4 right-4 p-2 rounded-full bg-white/80 shadow-md hover:bg-white"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       )}
     </div>
   );

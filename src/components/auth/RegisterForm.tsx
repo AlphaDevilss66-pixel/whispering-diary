@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail, Lock, User } from "lucide-react";
+import { Loader2, Mail, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
 
@@ -61,13 +61,15 @@ const RegisterForm = ({
     setFormErrors(null);
 
     try {
-      const { error } = await signUpWithEmail(email, password);
+      const { error, data } = await signUpWithEmail(email, password);
       
       if (error) {
         throw error;
+      } else {
+        // Show a clear message after successful registration
+        setFormErrors(null);
+        onSuccess();
       }
-      
-      onSuccess();
     } catch (error: any) {
       console.error("Registration error:", error);
       setFormErrors(error.message || "Registrazione fallita");
