@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 import { useSprings, animated, useSpring } from '@react-spring/web';
@@ -106,8 +107,8 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
     config: { mass: 5, tension: 500, friction: 80 },
   }));
   
-  // Fixed bindDrag function to properly return drag handlers
-  const bindDrag = useDrag(({ movement: [mx], active }) => {
+  // Fixed drag handling to return proper gesture handlers
+  const dragHandlers = useDrag(({ movement: [mx], active }) => {
     if (!allowDrag || isFlipping) return;
     
     if (active && Math.abs(mx) > 50) {
@@ -188,60 +189,57 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
           </div>
         </AnimatedDiv>
         
-        {props.map((style, index) => {
-          const dragHandlers = bindDrag();
-          return (
-            <AnimatedDiv
-              key={index}
-              {...dragHandlers}
+        {props.map((style, index) => (
+          <AnimatedDiv
+            key={index}
+            {...dragHandlers()}
+            style={{
+              ...style,
+              transformStyle: 'preserve-3d',
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+              backgroundColor: '#fff',
+              borderRadius: '0 8px 8px 0',
+              display: isOpen ? 'block' : 'none',
+            }}
+          >
+            <div
               style={{
-                ...style,
-                transformStyle: 'preserve-3d',
                 position: 'absolute',
                 width: '100%',
                 height: '100%',
+                backfaceVisibility: 'hidden',
+                padding: '2rem',
                 backgroundColor: '#fff',
                 borderRadius: '0 8px 8px 0',
-                display: isOpen ? 'block' : 'none',
+                overflowY: 'auto',
               }}
             >
-              <div
-                style={{
-                  position: 'absolute',
-                  width: '100%',
-                  height: '100%',
-                  backfaceVisibility: 'hidden',
-                  padding: '2rem',
-                  backgroundColor: '#fff',
-                  borderRadius: '0 8px 8px 0',
-                  overflowY: 'auto',
-                }}
-              >
-                {pages[index]}
-              </div>
-              
-              <div
-                style={{
-                  position: 'absolute',
-                  width: '100%',
-                  height: '100%',
-                  backfaceVisibility: 'hidden',
-                  transform: 'rotateY(180deg)',
-                  padding: '2rem',
-                  backgroundColor: '#fff',
-                  borderRadius: '0 8px 8px 0',
-                  overflowY: 'auto',
-                }}
-              >
-                {index < totalPages - 1 ? pages[index + 1] : (
-                  <div className="flex h-full items-center justify-center text-gray-400">
-                    <p>End of diary</p>
-                  </div>
-                )}
-              </div>
-            </AnimatedDiv>
-          );
-        })}
+              {pages[index]}
+            </div>
+            
+            <div
+              style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                backfaceVisibility: 'hidden',
+                transform: 'rotateY(180deg)',
+                padding: '2rem',
+                backgroundColor: '#fff',
+                borderRadius: '0 8px 8px 0',
+                overflowY: 'auto',
+              }}
+            >
+              {index < totalPages - 1 ? pages[index + 1] : (
+                <div className="flex h-full items-center justify-center text-gray-400">
+                  <p>End of diary</p>
+                </div>
+              )}
+            </div>
+          </AnimatedDiv>
+        ))}
       </div>
       
       {showControls && isOpen && (
