@@ -114,17 +114,19 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
   }));
   
   // Drag gesture for page turning - fixing the function type issue
-  const bindDrag = useDrag(({ movement: [mx], active }) => {
-    if (!allowDrag || isFlipping) return;
-    
-    if (active && Math.abs(mx) > 50) {
-      if (mx > 0 && currentPage > 0) {
-        prevPage();
-      } else if (mx < 0 && currentPage < totalPages - 1) {
-        nextPage();
+  const bindDrag = () => {
+    return useDrag(({ movement: [mx], active }) => {
+      if (!allowDrag || isFlipping) return;
+      
+      if (active && Math.abs(mx) > 50) {
+        if (mx > 0 && currentPage > 0) {
+          prevPage();
+        } else if (mx < 0 && currentPage < totalPages - 1) {
+          nextPage();
+        }
       }
-    }
-  });
+    });
+  };
   
   // Cover animation
   const coverSpring = useSpring({
@@ -202,10 +204,11 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
         
         {/* Pages */}
         {props.map((style, index) => {
+          const dragHandlers = bindDrag();
           return (
             <AnimatedDiv
               key={index}
-              {...bindDrag()}
+              {...dragHandlers}
               style={{
                 ...style,
                 transformStyle: 'preserve-3d',
