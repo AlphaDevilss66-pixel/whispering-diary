@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 import { useSprings, animated, useSpring } from '@react-spring/web';
@@ -114,15 +113,13 @@ const BookInterface: React.FC<BookInterfaceProps> = ({
   }));
   
   // Drag gesture for page turning
-  const bind = useDrag(({ active, movement: [mx], direction: [xDir], cancel }) => {
+  const bind = useDrag(({ down, movement: [mx], ...rest }) => {
     if (!allowDrag || isFlipping) return;
     
-    if (active && Math.abs(mx) > 50) {
+    if (down && Math.abs(mx) > 50) {
       if (mx > 0 && currentPage > 0) {
-        cancel();
         prevPage();
       } else if (mx < 0 && currentPage < totalPages - 1) {
-        cancel();
         nextPage();
       }
     }

@@ -3,7 +3,7 @@ import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Flame, Calendar, Sparkles, Hash, X } from "lucide-react";
 import DiaryEntries from "@/components/explore/DiaryEntries";
-import { DiaryEntry } from "@/hooks/useDiaryEntries";
+import { DiaryEntry } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 

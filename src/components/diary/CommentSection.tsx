@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -33,8 +34,14 @@ const CommentSection = ({ diaryEntryId, updateCommentCount }: CommentSectionProp
 
       if (commentsError) throw commentsError;
       
-      setComments(commentsData as Comment[]);
-      updateCommentCount(commentsData.length);
+      // Transform the data to match our Comment type with optional user
+      const typedComments = commentsData.map((comment: any) => ({
+        ...comment,
+        user: comment.profiles || null
+      })) as Comment[];
+      
+      setComments(typedComments);
+      updateCommentCount(typedComments.length);
     } catch (error) {
       console.error("Error fetching comments:", error);
       toast.error("Failed to load comments");

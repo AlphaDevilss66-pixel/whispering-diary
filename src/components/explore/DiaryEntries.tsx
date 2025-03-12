@@ -1,7 +1,7 @@
 
 import React from "react";
 import DiaryCard from "@/components/diary/DiaryCard";
-import { DiaryEntry } from "@/hooks/useDiaryEntries";
+import { DiaryEntry } from "@/types/database";
 
 type DiaryEntriesProps = {
   entries: DiaryEntry[];

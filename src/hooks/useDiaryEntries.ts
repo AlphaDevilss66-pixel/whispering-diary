@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -109,3 +110,5 @@ export const useDiaryEntries = (options: UseDiaryEntriesOptions = {}) => {
     filterLastWeek
   };
 };
+
+// No need to declare DiaryEntry locally, import from @/types/database
